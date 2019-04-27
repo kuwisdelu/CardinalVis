@@ -84,6 +84,8 @@ get_subset_choices <- function(subsets) {
 }
 
 get_subset_logical <- function(data, expr) {
+	if ( length(expr) > 1 )
+		expr <- paste0("(", expr, ")", collapse=" | ")
 	eval(parse(text=expr), as.env(pixelData(data)))
 }
 

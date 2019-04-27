@@ -12,7 +12,7 @@ msiView <- function(input, output, session, dataset) {
 
 	sv <- list(
 		mz = syncVal(mz(data())[1], function(mz) {
-			validate(need(mz, "Invalid m/z value"))
+			validate(need(mz, "invalid m/z value"))
 			mz(data())[features(data(), mz=mz)]
 		}),
 		mz_tol = syncVal(0.001),
@@ -32,6 +32,10 @@ msiView <- function(input, output, session, dataset) {
 		ionimage_function = syncVal("mean"),
 		spectrum_plotvar = syncVal(names(imageData(data()))[1]),
 		ionimage_plotvar = syncVal(names(imageData(data()))[1]),
+		mz_2 = syncVal(NA),
+		mz_3 = syncVal(NA),
+		xy_2 = syncVal(c(NA, NA)),
+		xy_3 = syncVal(c(NA, NA)),
 		closed = reactiveVal(FALSE)
 	)
 
@@ -69,18 +73,26 @@ msiView <- function(input, output, session, dataset) {
 	# pixel
 	sv[["pixel"]] <- reactive({
 		coord <- setNames(as.list(sv$xy()), sv$xy_names())
-		subl <- sv$subset_logical()
-		pixel <- pixels(data(), coord=coord, subl, .env=environment())
-		if ( length(pixel) > 1L ) {
-			warning("multiple pixels selected")
-			pixel <- pixel[1]
+		if ( all(!is.na(sv$xy_2())) ) {
+			coord[[1]] <- c(coord[[1]], sv$xy_2()[1])
+			coord[[2]] <- c(coord[[2]], sv$xy_2()[2])
 		}
-		pixel
+		if ( all(!is.na(sv$xy_3())) ) {
+			coord[[1]] <- c(coord[[1]], sv$xy_3()[1])
+			coord[[2]] <- c(coord[[2]], sv$xy_3()[2])
+		}
+		subl <- sv$subset_logical()
+		pixels(data(), coord=coord, subl, .env=environment())
 	})
 
 	# feature
 	sv[["feature"]] <- reactive({
-		features(data(), mz=sv$mz())
+		mz <- sv$mz()
+		if ( !is.na(sv$mz_2()) )
+			mz <- c(mz, sv$mz_2())
+		if ( !is.na(sv$mz_3()) )
+			mz <- c(mz, sv$mz_3())
+		features(data(), mz=mz)
 	})
 
 	## mcols variables
@@ -137,6 +149,22 @@ msiView <- function(input, output, session, dataset) {
 			need(sv$ionimage_plotvar(), "invalid image plot values")
 		)
 		lhs <- sv$ionimage_plotvar()
+		val <- pixelData(data())[[lhs]]
+		if ( !is.null(val) && !is.numeric(val) ) {
+			superpose <- FALSE
+			key <- TRUE
+		} else if ( length(sv$feature()) > 1L ) {
+			superpose <- TRUE
+			key <- TRUE
+		} else {
+			superpose <- FALSE
+			key <- FALSE
+		}
+		if ( length(sv$subset()) >= 7L ) {
+			layout <- c(2, ceiling(length(sv$subset()) / 2))
+		} else {
+			layout <- TRUE
+		}
 		fm <- paste0(lhs, "~", paste0(sv$xy_names(), collapse="*"))
 		image(data(),
 			formula=as.formula(fm),
@@ -145,6 +173,7 @@ msiView <- function(input, output, session, dataset) {
 			contrast.enhance=sv$ionimage_contrast(),
 			smooth.image=sv$ionimage_smoothing(),
 			fun=match.fun(sv$ionimage_function()),
+			key=key, superpose=superpose,
 			colorscale=col.map(sv$ionimage_colorscale(), 100),
 			subset=sv$subset_logical())
 	})
@@ -156,15 +185,32 @@ msiView <- function(input, output, session, dataset) {
 			need(sv$spectrum_plotvar(), "invalid spectrum plot values")
 		)
 		lhs <- sv$spectrum_plotvar()
+		val <- pixelData(data())[[lhs]]
+		if ( !is.null(val) ) {
+			superpose <- FALSE
+		} else if ( length(sv$pixel()) > 1L ) {
+			superpose <- TRUE
+		} else {
+			superpose <- FALSE
+		}
 		fm <- paste0(lhs, "~mz")
 		plot(data(),
 			formula=as.formula(fm),
-			pixel=sv$pixel())
+			pixel=sv$pixel(),
+			superpose=superpose)
 	})
 
 	plot_pos_marker <- function() {
 		points(sv$xy()[1], sv$xy()[2], pch=4, lwd=4, cex=2, col="black")
 		points(sv$xy()[1], sv$xy()[2], pch=4, lwd=2, cex=2, col="white")
+		if ( all(!is.na(sv$xy_2())) ) {
+			points(sv$xy_2()[1], sv$xy_2()[2], pch=3, lwd=4, cex=2, col="black")
+			points(sv$xy_2()[1], sv$xy_2()[2], pch=3, lwd=2, cex=2, col="lightblue")
+		}
+		if ( all(!is.na(sv$xy_3())) ) {
+			points(sv$xy_3()[1], sv$xy_3()[2], pch=3, lwd=4, cex=2, col="black")
+			points(sv$xy_3()[1], sv$xy_3()[2], pch=3, lwd=2, cex=2, col="lightgreen")
+		}
 	}
 
 	plot_mz_marker <- function() {
@@ -172,6 +218,10 @@ msiView <- function(input, output, session, dataset) {
 		rect(mz[1], par("usr")[3], mz[2], par("usr")[4],
 			col=rgb(1, 0, 0, 0, alpha=0.5), border=NA)
 		abline(v=sv$mz(), lty=2, lwd=2, col="darkred")
+		if ( !is.na(sv$mz_2()) )
+			abline(v=sv$mz_2(), lty=3, lwd=2, col="darkblue")
+		if ( !is.na(sv$mz_3()) )
+			abline(v=sv$mz_3(), lty=3, lwd=2, col="darkgreen")
 	}
 
 	#### plot reactivity ####
@@ -311,7 +361,7 @@ msiView <- function(input, output, session, dataset) {
 			need(input$mz, "invalid m/z value"),
 			need(sv$mz_tol(), "invalid m/z tolerance")
 		)
-		feature_old <- sv$feature()
+		feature_old <- sv$feature()[1]
 		feature_new <- features(data(), mz=input$mz)
 		validate(need(feature_new, "invalid m/z value"))
 		if ( feature_old != feature_new ) {
@@ -320,9 +370,9 @@ msiView <- function(input, output, session, dataset) {
 			if ( abs(input$mz - sv$mz()) < sv$mz_tol() ) {
 				return()
 			} else if ( input$mz > sv$mz() ) {
-				mz_new <- mz(data())[sv$feature() + 1L]
+				mz_new <- mz(data())[sv$feature()[1] + 1L]
 			} else if ( input$mz < sv$mz() ) {
-				mz_new <- mz(data())[sv$feature() - 1L]
+				mz_new <- mz(data())[sv$feature()[1] - 1L]
 			}
 		}
 		sv$mz(mz_new)
@@ -387,7 +437,7 @@ msiView <- function(input, output, session, dataset) {
 		choices <- sv$subset_choices()
 		selected <- sv$subset()
 		selectInput(ns("subset"), "Subset",
-			choices=choices, selected=selected)
+			choices=choices, selected=selected, multiple=TRUE)
 	})
 
 	# change subset
@@ -474,12 +524,64 @@ msiView <- function(input, output, session, dataset) {
 		sv$spectrum_massrange(mzr)
 	})
 
+	#### overlay input reactivity ####
+
+	observe({
+		if ( isTRUE(input$mz_2_overlay) ) {
+			mz <- input$mz_2
+			validate(need(mz, "invalid m/z value"))
+			mz <- mz(data())[features(data(), mz=mz)]
+			sv$mz_2(mz)
+		} else {
+			sv$mz_2(NA)
+		}
+	})
+
+	observe({
+		if ( isTRUE(input$mz_3_overlay) ) {
+			mz <- input$mz_3
+			validate(need(mz, "invalid m/z value"))
+			mz <- mz(data())[features(data(), mz=mz)]
+			sv$mz_3(mz)
+		} else {
+			sv$mz_3(NA)
+		}
+	})
+
+	observe({
+		if ( isTRUE(input$xy_2_overlay) ) {
+			x <- input$x_2
+			y <- input$y_2
+			validate(
+				need(x, "invalid x value"),
+				need(y, "invalid y value")
+			)
+			sv$xy_2(c(x, y))
+		} else {
+			sv$xy_2(c(NA, NA))
+		}
+	})
+
+	observe({
+		if ( isTRUE(input$xy_3_overlay) ) {
+			x <- input$x_3
+			y <- input$y_3
+			validate(
+				need(x, "invalid x value"),
+				need(y, "invalid y value")
+			)
+			sv$xy_3(c(x, y))
+		} else {
+			sv$xy_3(c(NA, NA))
+		}
+	})
+
 	#### intensity range input reactivity ####
 
 	# autoscale ionimage intensity ui
 	output$ionimage_intensity_range <- renderUI({
 		if ( is.null(sv$ionimage_intensity_range()) ) {
-			range <- range(spectra(data())[sv$feature(),])
+			range <- plot_ionimage()$par$zlim
 		} else {
 			range <- sv$ionimage_intensity_range()
 		}
@@ -523,7 +625,7 @@ msiView <- function(input, output, session, dataset) {
 	# autoscale spectrum intensity ui
 	output$spectrum_intensity_range <- renderUI({
 		if ( is.null(sv$spectrum_intensity_range()) ) {
-			range <- range(spectra(data())[,sv$pixel()])
+			range <- plot_spectrum()$par$ylim
 		} else {
 			range <- sv$spectrum_intensity_range()
 		}

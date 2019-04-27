@@ -3,7 +3,7 @@
 msiUI <- function() {
 	dashboardPage(skin="red",
 		dashboardHeader(
-			title="CardinalVis",
+			title="Cardinal",
 			titleWidth=200
 		),
 		dashboardSidebar(
