@@ -30,9 +30,6 @@ msiView <- function(input, output, session, dataset) {
 		ionimage_smoothing = syncVal("none"),
 		ionimage_colorscale = syncVal("viridis"),
 		ionimage_function = syncVal("mean"),
-		plot_layout = syncVal(50), # 50%, 50%
-		ionimage_height = syncVal(350), # 350px
-		spectrum_height = syncVal(200), # 200px
 		closed = reactiveVal(FALSE)
 	)
 
@@ -83,31 +80,35 @@ msiView <- function(input, output, session, dataset) {
 	})
 
 	# close view
-	observeEvent(input$close, {
-		if ( input$close > 0 )
-			sv$closed(TRUE)
-	})
+	# observeEvent(input$close, {
+	# 	if ( input$close > 0 )
+	# 		sv$closed(TRUE)
+	# })
 
 	#### plot output ####
 
-	output$spectrum_plot <- renderUI({
-		validate(need(sv$spectrum_height(), "invalid plot height"))
-		plotOutput(ns("spectrum"),
-			click=clickOpts(id=ns("spectrum_click")),
-			dblclick=dblclickOpts(id=ns("spectrum_dblclick")),
-			brush=brushOpts(id=ns("spectrum_brush"),
-				direction="x", resetOnNew=TRUE),
-			height=paste0(sv$spectrum_height(), "px"))
+	output$ionimage_plot <- renderUI({
+		tags$div(
+			tags$style(type = "text/css",
+				paste0("#", ns("ionimage"), " {height: calc(100vh - 300px) !important;}")),
+			plotOutput(ns("ionimage"),
+				click=clickOpts(id=ns("ionimage_click")),
+				dblclick=dblclickOpts(id=ns("ionimage_dblclick")),
+				brush=brushOpts(id=ns("ionimage_brush"),
+					direction="xy", resetOnNew=TRUE),
+				height="auto")
+		)
 	})
 
-	output$ionimage_plot <- renderUI({
-		validate(need(sv$ionimage_height(), "invalid plot height"))
-		plotOutput(ns("ionimage"),
-			click=clickOpts(id=ns("ionimage_click")),
-			dblclick=dblclickOpts(id=ns("ionimage_dblclick")),
-			brush=brushOpts(id=ns("ionimage_brush"),
-				direction="xy", resetOnNew=TRUE),
-			height=paste0(sv$ionimage_height(), "px"))
+	output$spectrum_plot <- renderUI({
+		tags$div(
+			plotOutput(ns("spectrum"),
+				click=clickOpts(id=ns("spectrum_click")),
+				dblclick=dblclickOpts(id=ns("spectrum_dblclick")),
+				brush=brushOpts(id=ns("spectrum_brush"),
+					direction="x", resetOnNew=TRUE),
+				height="200px")
+		)
 	})
 
 	plot_null <- function(...) {
@@ -117,14 +118,6 @@ msiView <- function(input, output, session, dataset) {
 			xaxt='n', yaxt='n')
 		text(0, 0, "Nothing to plot.")
 	}
-
-	plot_spectrum <- reactive({
-		validate(
-			need(sv$xy(), "invalid x/y position"),
-			need(sv$xy_names(), "invalid x/y names")
-		)
-		plot(data(), pixel=sv$pixel())
-	})
 
 	plot_ionimage <- reactive({
 		validate(
@@ -145,6 +138,19 @@ msiView <- function(input, output, session, dataset) {
 			subset=sv$subset_logical())
 	})
 
+	plot_spectrum <- reactive({
+		validate(
+			need(sv$xy(), "invalid x/y position"),
+			need(sv$xy_names(), "invalid x/y names")
+		)
+		plot(data(), pixel=sv$pixel())
+	})
+
+	plot_pos_marker <- function() {
+		points(sv$xy()[1], sv$xy()[2], pch=4, lwd=4, cex=2, col="black")
+		points(sv$xy()[1], sv$xy()[2], pch=4, lwd=2, cex=2, col="white")
+	}
+
 	plot_mz_marker <- function() {
 		mz <- c(sv$mz() - sv$mz_tol(), sv$mz() + sv$mz_tol())
 		rect(mz[1], par("usr")[3], mz[2], par("usr")[4],
@@ -152,25 +158,7 @@ msiView <- function(input, output, session, dataset) {
 		abline(v=sv$mz(), lty=2, lwd=2, col="darkred")
 	}
 
-	plot_pos_marker <- function() {
-		points(sv$xy()[1], sv$xy()[2], pch=4, lwd=4, cex=2, col="black")
-		points(sv$xy()[1], sv$xy()[2], pch=4, lwd=2, cex=2, col="white")
-	}
-
 	#### plot reactivity ####
-
-	output$spectrum <- renderPlot({
-		validate(
-			need(sv$spectrum_massrange(), "invalid mass range"),
-			need(!anyNA(sv$spectrum_intensity_range()), "invalid intensity range")
-		)
-		tryCatch({
-			print(plot_spectrum(),
-				xlim=sv$spectrum_massrange(),
-				ylim=sv$spectrum_intensity_range())
-			plot_mz_marker()
-		}, warning=plot_null, error=plot_null)
-	}, bg="transparent")
 
 	output$ionimage <- renderPlot({
 		validate(
@@ -183,6 +171,19 @@ msiView <- function(input, output, session, dataset) {
 				ylim=sv$ionimage_xylim()[c(3,4)],
 				zlim=sv$ionimage_intensity_range())
 			plot_pos_marker()
+		}, warning=plot_null, error=plot_null)
+	}, bg="transparent")
+
+	output$spectrum <- renderPlot({
+		validate(
+			need(sv$spectrum_massrange(), "invalid mass range"),
+			need(!anyNA(sv$spectrum_intensity_range()), "invalid intensity range")
+		)
+		tryCatch({
+			print(plot_spectrum(),
+				xlim=sv$spectrum_massrange(),
+				ylim=sv$spectrum_intensity_range())
+			plot_mz_marker()
 		}, warning=plot_null, error=plot_null)
 	}, bg="transparent")
 
@@ -458,16 +459,6 @@ msiView <- function(input, output, session, dataset) {
 	})
 
 	#### scale input reactivity ####
-
-	# ionimage height
-	observeEvent(input$ionimage_height, {
-		sv$ionimage_height(input$ionimage_height)
-	})
-
-	# spectrum height
-	observeEvent(input$spectrum_height, {
-		sv$spectrum_height(input$spectrum_height)
-	})
 
 	# autoscale ionimage intensity ui
 	output$ionimage_intensity_range <- renderUI({
