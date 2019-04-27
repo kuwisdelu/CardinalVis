@@ -203,13 +203,15 @@ msiView <- function(input, output, session, dataset) {
 	plot_pos_marker <- function() {
 		points(sv$xy()[1], sv$xy()[2], pch=4, lwd=4, cex=2, col="black")
 		points(sv$xy()[1], sv$xy()[2], pch=4, lwd=2, cex=2, col="white")
+		num_xy <- 1 + all(!is.na(sv$xy_2())) + all(!is.na(sv$xy_3()))
 		if ( all(!is.na(sv$xy_2())) ) {
+			col <- ifelse(num_xy > 2, "lightgreen", "lightblue")
 			points(sv$xy_2()[1], sv$xy_2()[2], pch=3, lwd=4, cex=2, col="black")
-			points(sv$xy_2()[1], sv$xy_2()[2], pch=3, lwd=2, cex=2, col="lightblue")
+			points(sv$xy_2()[1], sv$xy_2()[2], pch=3, lwd=2, cex=2, col=col)
 		}
 		if ( all(!is.na(sv$xy_3())) ) {
 			points(sv$xy_3()[1], sv$xy_3()[2], pch=3, lwd=4, cex=2, col="black")
-			points(sv$xy_3()[1], sv$xy_3()[2], pch=3, lwd=2, cex=2, col="lightgreen")
+			points(sv$xy_3()[1], sv$xy_3()[2], pch=3, lwd=2, cex=2, col="lightblue")
 		}
 	}
 
@@ -218,10 +220,13 @@ msiView <- function(input, output, session, dataset) {
 		rect(mz[1], par("usr")[3], mz[2], par("usr")[4],
 			col=rgb(1, 0, 0, 0, alpha=0.5), border=NA)
 		abline(v=sv$mz(), lty=2, lwd=2, col="darkred")
-		if ( !is.na(sv$mz_2()) )
-			abline(v=sv$mz_2(), lty=3, lwd=2, col="darkblue")
+		num_mz <- 1 + (!is.na(sv$mz_2())) + (!is.na(sv$mz_3()))
+		if ( !is.na(sv$mz_2()) ) {
+			col <- ifelse(num_mz > 2, "darkgreen", "darkblue")
+			abline(v=sv$mz_2(), lty=3, lwd=2, col=col)
+		}
 		if ( !is.na(sv$mz_3()) )
-			abline(v=sv$mz_3(), lty=3, lwd=2, col="darkgreen")
+			abline(v=sv$mz_3(), lty=3, lwd=2, col="darkblue")
 	}
 
 	#### plot reactivity ####

@@ -1,4 +1,10 @@
 
+# supported Cardinal classes
+
+get_supported_classes <- function() {
+	c("MSImagingExperiment")
+}
+
 # dashboard theme
 
 get_dashboard_bg_color <- function() {
