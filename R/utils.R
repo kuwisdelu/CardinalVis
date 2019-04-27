@@ -1,4 +1,36 @@
 
+# dashboard theme
+
+get_dashboard_bg_color <- function() {
+	if ( getOption("Cardinal.dark") ) {
+		tags$head(tags$style(HTML(
+			".content-wrapper, .right-side
+			{background-color: #3A4246;}")))
+	} else {
+		tags$head(tags$style(HTML(
+			".content-wrapper, .right-side
+			{background-color: #EBF0F5;}")))
+	}
+}
+
+get_actionButton_style <- function() {
+	if ( getOption("Cardinal.dark") ) {
+		"color: #AAAAAA;
+		background-color: #262626;
+		border-color: #636363;"
+	} else {
+		""
+	}
+}
+
+get_box_background <- function() {
+	if ( getOption("Cardinal.dark") ) {
+		"black"
+	} else {
+		NULL
+	}
+}
+
 # zoom utilities
 
 zoom_in <- function(values, center) {

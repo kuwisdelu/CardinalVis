@@ -30,6 +30,8 @@ msiView <- function(input, output, session, dataset) {
 		ionimage_smoothing = syncVal("none"),
 		ionimage_colorscale = syncVal("viridis"),
 		ionimage_function = syncVal("mean"),
+		spectrum_plotvar = syncVal(names(imageData(data()))[1]),
+		ionimage_plotvar = syncVal(names(imageData(data()))[1]),
 		closed = reactiveVal(FALSE)
 	)
 
@@ -64,6 +66,7 @@ msiView <- function(input, output, session, dataset) {
 
 	## pixels and features
 
+	# pixel
 	sv[["pixel"]] <- reactive({
 		coord <- setNames(as.list(sv$xy()), sv$xy_names())
 		subl <- sv$subset_logical()
@@ -75,15 +78,22 @@ msiView <- function(input, output, session, dataset) {
 		pixel
 	})
 
+	# feature
 	sv[["feature"]] <- reactive({
 		features(data(), mz=sv$mz())
 	})
 
-	# close view
-	# observeEvent(input$close, {
-	# 	if ( input$close > 0 )
-	# 		sv$closed(TRUE)
-	# })
+	## mcols variables
+
+	# pixel mcols
+	sv[["pixel_vars"]] <- reactive({
+		c(names(imageData(data()))[1], names(pixelData(data())))
+	})
+
+	# feature mcols
+	sv[["feature_vars"]] <- reactive({
+		c(names(imageData(data()))[1], names(featureData(data())))
+	})
 
 	#### plot output ####
 
@@ -123,10 +133,11 @@ msiView <- function(input, output, session, dataset) {
 		validate(
 			need(sv$mz(), "invalid m/z value"),
 			need(sv$mz_tol(), "invalid m/z tolerance"),
-			need(sv$xy_names(), "invalid x/y names")
+			need(sv$xy_names(), "invalid x/y names"),
+			need(sv$ionimage_plotvar(), "invalid image plot values")
 		)
-		colmap <- color.map(sv$ionimage_colorscale(), 100)
-		fm <- paste0("~", paste0(sv$xy_names(), collapse="*"))
+		lhs <- sv$ionimage_plotvar()
+		fm <- paste0(lhs, "~", paste0(sv$xy_names(), collapse="*"))
 		image(data(),
 			formula=as.formula(fm),
 			feature=sv$feature(),
@@ -134,16 +145,21 @@ msiView <- function(input, output, session, dataset) {
 			contrast.enhance=sv$ionimage_contrast(),
 			smooth.image=sv$ionimage_smoothing(),
 			fun=match.fun(sv$ionimage_function()),
-			colorscale=colmap,
+			colorscale=col.map(sv$ionimage_colorscale(), 100),
 			subset=sv$subset_logical())
 	})
 
 	plot_spectrum <- reactive({
 		validate(
 			need(sv$xy(), "invalid x/y position"),
-			need(sv$xy_names(), "invalid x/y names")
+			need(sv$xy_names(), "invalid x/y names"),
+			need(sv$spectrum_plotvar(), "invalid spectrum plot values")
 		)
-		plot(data(), pixel=sv$pixel())
+		lhs <- sv$spectrum_plotvar()
+		fm <- paste0(lhs, "~mz")
+		plot(data(),
+			formula=as.formula(fm),
+			pixel=sv$pixel())
 	})
 
 	plot_pos_marker <- function() {
@@ -458,7 +474,7 @@ msiView <- function(input, output, session, dataset) {
 		sv$spectrum_massrange(mzr)
 	})
 
-	#### scale input reactivity ####
+	#### intensity range input reactivity ####
 
 	# autoscale ionimage intensity ui
 	output$ionimage_intensity_range <- renderUI({
@@ -548,7 +564,7 @@ msiView <- function(input, output, session, dataset) {
 			sv$spectrum_intensity_range(NULL)
 	})
 
-	#### options input reactivity ####
+	#### image options input reactivity ####
 
 	# ionimage contrast
 	observeEvent(input$ionimage_contrast, {
@@ -568,6 +584,32 @@ msiView <- function(input, output, session, dataset) {
 	# ionimage function
 	observeEvent(input$ionimage_function, {
 		sv$ionimage_function(input$ionimage_function)
+	})
+
+	#### mcols variables input reactivity ####
+
+	# feature mcols ui
+	output$feature_vars <- renderUI({
+		selectInput(ns("feature_vars"), "Spectrum",
+			choices=sv$feature_vars())
+	})
+
+	# pixel mcols ui
+	output$pixel_vars <- renderUI({
+		selectInput(ns("pixel_vars"), "Image",
+			choices=sv$pixel_vars())
+	})
+
+	# spectrum plot value
+	observe({
+		validate(need(input$feature_vars, "invalid spectrum variable"))
+		sv$spectrum_plotvar(input$feature_vars)
+	})
+
+	# ionimage plot value
+	observe({
+		validate(need(input$pixel_vars, "invalid image variable"))
+		sv$ionimage_plotvar(input$pixel_vars)
 	})
 
 	#### return ####

@@ -2,32 +2,43 @@
 msiViewUI <- function(id, label = "Data Viewer") {
 	ns <- NS(id)
 	fluidRow(
+		tags$head(tags$style(HTML(".col-sm-12 {padding: 0px;}"))),
+		tags$head(tags$style(HTML(".box {margin: 5px;}"))),
 		column(width=9,
-			tags$style(HTML('
-				.box {padding-left: 1px; padding-right: 1px;}')),
 			verticalLayout(
-				fluidRow(
+				tags$div(
 					splitLayout(
 						cellWidths=c("5%", "95%"),
 						verticalLayout(
-							actionButton(ns("ionimage_zoom_full"), "", icon=icon("arrows"), width="100%"),
-							actionButton(ns("ionimage_zoom_full_x"), "", icon=icon("arrows-h"), width="100%"),
-							actionButton(ns("ionimage_zoom_full_y"), "", icon=icon("arrows-v"), width="100%"),
-							actionButton(ns("ionimage_zoom_in"), "", icon=icon("search-plus"), width="100%"),
-							actionButton(ns("ionimage_zoom_out"), "", icon=icon("search-minus"), width="100%")
+							actionButton(ns("ionimage_zoom_full"), "", icon=icon("arrows"),
+								width="100%", style=get_actionButton_style()),
+							actionButton(ns("ionimage_zoom_full_x"), "", icon=icon("arrows-h"),
+								width="100%", style=get_actionButton_style()),
+							actionButton(ns("ionimage_zoom_full_y"), "", icon=icon("arrows-v"),
+								width="100%", style=get_actionButton_style()),
+							actionButton(ns("ionimage_zoom_in"), "", icon=icon("search-plus"),
+								width="100%", style=get_actionButton_style()),
+							actionButton(ns("ionimage_zoom_out"), "", icon=icon("search-minus"),
+								width="100%", style=get_actionButton_style())
 						),
 						uiOutput(ns("ionimage_plot"))
 					)
 				),
 				box(width=12,
+					background=get_box_background(),
 					splitLayout(
 						cellWidths=c("5%", "95%"),
 						verticalLayout(
-							actionButton(ns("spectrum_zoom_full"), "", icon=icon("arrows"), width="100%"),
-							actionButton(ns("spectrum_zoom_full_x"), "", icon=icon("arrows-h"), width="100%"),
-							actionButton(ns("spectrum_zoom_full_y"), "", icon=icon("arrows-v"), width="100%"),
-							actionButton(ns("spectrum_zoom_in"), "", icon=icon("search-plus"), width="100%"),
-							actionButton(ns("spectrum_zoom_out"), "", icon=icon("search-minus"), width="100%")
+							actionButton(ns("spectrum_zoom_full"), "", icon=icon("arrows"),
+								width="100%", style=get_actionButton_style()),
+							actionButton(ns("spectrum_zoom_full_x"), "", icon=icon("arrows-h"),
+								width="100%", style=get_actionButton_style()),
+							actionButton(ns("spectrum_zoom_full_y"), "", icon=icon("arrows-v"),
+								width="100%", style=get_actionButton_style()),
+							actionButton(ns("spectrum_zoom_in"), "", icon=icon("search-plus"),
+								width="100%", style=get_actionButton_style()),
+							actionButton(ns("spectrum_zoom_out"), "", icon=icon("search-minus"),
+								width="100%", style=get_actionButton_style())
 						),
 						uiOutput(ns("spectrum_plot"))
 					)
@@ -36,6 +47,7 @@ msiViewUI <- function(id, label = "Data Viewer") {
 		),
 		column(width=3,
 			box(title="Navigation",
+				background=get_box_background(),
 				collapsible=TRUE,
 				width=12,
 				fluidRow(
@@ -55,12 +67,12 @@ msiViewUI <- function(id, label = "Data Viewer") {
 						uiOutput(ns("x_name"))
 					),
 					column(6, style="padding:0px 20px 0px 5px;",
-						uiOutput(ns("x"))
+						uiOutput(ns("y_name"))
 					)
 				),
 				fluidRow(
 					column(6, style="padding:0px 5px 0px 20px;",
-						uiOutput(ns("y_name"))
+						uiOutput(ns("x"))
 					),
 					column(6, style="padding:0px 20px 0px 5px;",
 						uiOutput(ns("y"))
@@ -71,7 +83,60 @@ msiViewUI <- function(id, label = "Data Viewer") {
 					uiOutput(ns("subset"))
 				)
 			),
+			box(title="Overlay",
+				background=get_box_background(),
+				collapsible=TRUE,
+				collapsed=TRUE,
+				width=12,
+				fluidRow(
+					style="padding:0px 0px 0px 20px;",
+					tags$label("m/z")
+				),
+				fluidRow(
+					column(2, style="padding:0px 5px 0px 20px;",
+						checkboxInput(ns("mz_2_overlay"), NULL, value=FALSE)
+					),
+					column(10, style="padding:0px 20px 0px 5px;",
+						numericInput(ns("mz_2"), NULL, value=NA, step=1)
+					)
+				),
+				fluidRow(
+					column(2, style="padding:0px 5px 0px 20px;",
+						checkboxInput(ns("mz_3_overlay"), NULL, value=FALSE)
+					),
+					column(10, style="padding:0px 20px 0px 5px;",
+						numericInput(ns("mz_3"), NULL, value=NA, step=1)
+					)
+				),
+				fluidRow(
+					style="padding:0px 0px 0px 20px;",
+					tags$label("Position")
+				),
+				fluidRow(
+					column(2, style="padding:0px 5px 0px 20px;",
+						checkboxInput(ns("xy_2_overlay"), NULL, value=FALSE)
+					),
+					column(5, style="padding:0px 10px 0px 10px;",
+						numericInput(ns("x_2"), NULL, value=NA, step=1)
+					),
+					column(5, style="padding:0px 20px 0px 5px;",
+						numericInput(ns("y_2"), NULL, value=NA, step=1)
+					)
+				),
+				fluidRow(
+					column(2, style="padding:0px 5px 0px 20px;",
+						checkboxInput(ns("xy_3_overlay"), NULL, value=FALSE)
+					),
+					column(5, style="padding:0px 10px 0px 10px;",
+						numericInput(ns("x_3"), NULL, value=NA, step=1)
+					),
+					column(5, style="padding:0px 20px 0px 5px;",
+						numericInput(ns("y_3"), NULL, value=NA, step=1)
+					)
+				)
+			),
 			box(title="Intensity range",
+				background=get_box_background(),
 				collapsible=TRUE,
 				collapsed=TRUE,
 				width=12,
@@ -105,7 +170,9 @@ msiViewUI <- function(id, label = "Data Viewer") {
 				)
 			),
 			box(title="Image options",
+				background=get_box_background(),
 				collapsible=TRUE,
+				collapsed=TRUE,
 				width=12,
 				fluidRow(
 					column(6, style="padding:0px 5px 0px 20px;",
@@ -125,6 +192,20 @@ msiViewUI <- function(id, label = "Data Viewer") {
 					column(6, style="padding:0px 20px 0px 5px;",
 						selectInput(ns("ionimage_function"), "Intensity",
 							choices=ionimage_function_options())
+					)
+				)
+			),
+			box(title="Variables",
+				background=get_box_background(),
+				collapsible=TRUE,
+				collapsed=TRUE,
+				width=12,
+				fluidRow(
+					column(6, style="padding:0px 5px 0px 20px;",
+						uiOutput(ns("pixel_vars"))
+					),
+					column(6, style="padding:0px 20px 0px 5px;",
+						uiOutput(ns("feature_vars"))
 					)
 				)
 			)
