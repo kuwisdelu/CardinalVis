@@ -1,4 +1,18 @@
 
+importFrom("graphics",
+	"abline",
+	"par",
+	"points",
+	"rect",
+	"text")
+
+importFrom("grDevices",
+	"rgb")
+
+importFrom("stats",
+	"as.formula",
+	"setNames")
+
 import("shiny")
 
 import("shinydashboard")
