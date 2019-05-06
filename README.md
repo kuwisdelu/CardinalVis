@@ -22,6 +22,7 @@ if (!requireNamespace("CardinalWorkflows", quietly = TRUE))
 library(CardinalVis)
 
 data(pig206, package="CardinalWorkflows")
+pig206 <- as(pig206, "MSImagingExperiment")
 
 msiVis(pig206)
 ```
