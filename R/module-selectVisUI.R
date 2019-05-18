@@ -6,7 +6,7 @@ selectVisUI <- function(id) {
  
   tagList(
     plotOutput(ns("selectROIView"), 
-             click = "plot_click"),
+             click = ns("plot_click")),
     verbatimTextOutput(ns("info"))
   )
 }
