@@ -15,7 +15,9 @@ importFrom("stats",
 
 import("shiny")
 
-import("shinyjs")
+importFrom("shinyjs",
+  "useShinyjs",
+  "extendShinyjs")
 
 import("shinydashboard")
 
