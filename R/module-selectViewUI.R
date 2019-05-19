@@ -9,7 +9,6 @@ selectViewUI <- function(id) {
              click = ns("plot_click")),
     fluidRow(
       actionButton(ns("button_select"), "Select"),
-      actionButton(ns("button_done"), "Done")),
-    verbatimTextOutput(ns("info"))
+      actionButton(ns("button_done"), "Done"))
   )
 }

@@ -7,7 +7,8 @@ selectVis <- function(dataset) {
 	data <- try(get(dataset, envir=globalenv()), silent=TRUE)
 
 	#if ( inherits(data, get_supported_classes()) ) {
-		shinyApp(ui=selectUI(), server=selectServer(dataset))
+	selectedROI <- runApp(list(ui=selectUI(), server=selectServer(dataset)))
+	return(selectedROI)
 	#} else {
 #		shinyApp(ui=selectViewUI(), server=selectView(NULL))
 	#}

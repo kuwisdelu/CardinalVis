@@ -19,6 +19,8 @@ selectView <- function(input, output, session, dataset) {
   
   plot_image <- reactive({ image(data()) })
   
+  ret <- reactiveValues(roi = NULL)
+  
   output$selectROIView <- renderPlot({
     plot_image()
   })
@@ -30,18 +32,14 @@ selectView <- function(input, output, session, dataset) {
   
   observeEvent(input$button_select, {
 
-      roi <- .selectRegion(clicks, pixelData(data()),
+      roi <- reactive({ .selectRegion(clicks, pixelData(data()),
                 subset = plot_image()$subset, 
-                axs = plot_image()$coordnames)
+                axs = plot_image()$coordnames) })
       
-      output$info <- renderText({
-            paste0(roi)
-      }) 
+      ret[["roi"]] <- roi()
       
   })
   
-  observeEvent(input$button_done, {
-    stopApp() 
-  })
+  return(reactive({ ret[["roi"]] }))
   
 }

@@ -108,6 +108,14 @@ selectServer <- function(dataset) {
     
     roi <- callModule(selectView, "test_select", dataset)
     
+    output$info <- renderText({
+      roi()
+    })
+    
+    observe({
+      if (!is.null(roi()))
+        stopApp(roi())
+    })
   }
   
 }
