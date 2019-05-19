@@ -99,8 +99,6 @@ selectUI <- function() {
                   tags$style(type="text/css",
                              ".shiny-input-container 
 				{padding: 0px !important;}"),
-                  useShinyjs(),
-                  extendShinyjs(text = jscode, functions = c("closeWindow")),
                   uiOutput("plot_display"),
                   verbatimTextOutput("info")
                 )

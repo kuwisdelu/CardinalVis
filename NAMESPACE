@@ -15,10 +15,6 @@ importFrom("stats",
 
 import("shiny")
 
-importFrom("shinyjs",
-  "useShinyjs",
-  "extendShinyjs")
-
 import("shinydashboard")
 
 import("Cardinal")
