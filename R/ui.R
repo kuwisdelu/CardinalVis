@@ -87,4 +87,18 @@ helpUI <- function() {
 	)
 }
 
-
+selectUI <- function() {
+  dashboardPage(skin="red",
+                dashboardHeader(
+                  title="Region of Interest Selector"
+                ),
+                dashboardSidebar(disable=TRUE),
+                dashboardBody(
+                  get_dashboard_bg_color(),
+                  tags$style(type="text/css",
+                             ".shiny-input-container 
+				{padding: 0px !important;}"),
+                  uiOutput("plot_display")
+                )
+  )
+}

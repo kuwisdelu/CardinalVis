@@ -1,5 +1,5 @@
 
-selectVisUI <- function(id) {
+selectViewUI <- function(id) {
   ns <- NS(id)
  
   ## UI elements

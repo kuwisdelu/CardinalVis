@@ -97,3 +97,17 @@ msiServer <- function(dataset) {
 	}
 
 }
+
+selectServer <- function(dataset) {
+  
+  function(input, output, session) {
+    
+    output$plot_display <- renderUI({
+      selectViewUI("test_select")
+    })
+    
+    callModule(selectView, "test_select", dataset)
+    
+  }
+  
+}
