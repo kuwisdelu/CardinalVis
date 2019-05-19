@@ -88,6 +88,7 @@ helpUI <- function() {
 }
 
 selectUI <- function() {
+  jscode <- "shinyjs.closeWindow = function() { window.close(); }"
   dashboardPage(skin="red",
                 dashboardHeader(
                   title="Region of Interest Selector"
@@ -98,7 +99,10 @@ selectUI <- function() {
                   tags$style(type="text/css",
                              ".shiny-input-container 
 				{padding: 0px !important;}"),
-                  uiOutput("plot_display")
+                  useShinyjs(),
+                  extendShinyjs(text = jscode, functions = c("closeWindow")),
+                  uiOutput("plot_display"),
+                  verbatimTextOutput("info")
                 )
   )
 }

@@ -10,7 +10,7 @@ Description: Provides a shiny-based GUI interface for Cardinal
 	imaging experiments.
 License: Artistic-2.0
 Depends: R (>= 3.6), Cardinal, graphics
-Imports: shiny, shinydashboard, stats
+Imports: shiny, shinydashboard, stats, shinyjs
 Suggests: BiocStyle, knitr, rmarkdown
 VignetteBuilder: knitr
 biocViews: Software, ImagingMassSpectrometry, Visualization, GUI

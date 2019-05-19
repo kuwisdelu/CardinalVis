@@ -106,7 +106,7 @@ selectServer <- function(dataset) {
       selectViewUI("test_select")
     })
     
-    callModule(selectView, "test_select", dataset)
+    roi <- callModule(selectView, "test_select", dataset)
     
   }
   

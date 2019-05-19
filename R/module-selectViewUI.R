@@ -7,6 +7,7 @@ selectViewUI <- function(id) {
   tagList(
     plotOutput(ns("selectROIView"), 
              click = ns("plot_click")),
+    actionButton(ns("button_done"), "Done"),
     verbatimTextOutput(ns("info"))
   )
 }
