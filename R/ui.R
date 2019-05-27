@@ -4,7 +4,14 @@ msiUI <- function() {
 	dashboardPage(skin="red",
 		dashboardHeader(
 			title="Cardinal",
-			titleWidth=200
+			titleWidth=200,
+			tags$li(class="dropdown",
+				add_busy_spinner(
+					spin="fading-circle",
+					color="#FFFFFF",
+					timeout=500,
+					height="35px",
+					width="35px"))
 		),
 		dashboardSidebar(
 			width=200,
