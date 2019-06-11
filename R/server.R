@@ -106,10 +106,10 @@ selectServer <- function(dataset) {
       selectViewUI("test_select")
     })
     
-    roi <- callModule(selectView, "test_select", dataset)
-    
-    output$info <- renderText({
-      roi()
+    ## callModule from within reactive environment
+    observe({
+      if (!is.null(dataset))
+        roi <- callModule(selectView, "test_select", dataset)
     })
     
     observe({

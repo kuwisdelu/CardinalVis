@@ -6,11 +6,13 @@ selectVis <- function(dataset) {
 	
 	data <- try(get(dataset, envir=globalenv()), silent=TRUE)
 
-	#if ( inherits(data, get_supported_classes()) ) {
-	selectedROI <- runApp(list(ui=selectUI(), server=selectServer(dataset)))
-	return(selectedROI)
-	#} else {
-#		shinyApp(ui=selectViewUI(), server=selectView(NULL))
-	#}
+	if ( inherits(data, get_supported_classes()) ) {
+  	selectedROI <- runApp(list(ui=selectUI(), server=selectServer(dataset)))
+  	return(selectedROI)
+	} else {
+	  ## update later
+	  print("unsupported type")
+	  shinyApp(ui=selectUI(), server=selectServer(NULL))
+	}
   
 }
