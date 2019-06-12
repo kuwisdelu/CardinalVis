@@ -1,5 +1,5 @@
 
-selectView <- function(input, output, session, dataset) {
+selectView <- function(input, output, session, dataset, ...) {
   
   #### session variables ####
 	
@@ -9,7 +9,7 @@ selectView <- function(input, output, session, dataset) {
 		tryCatch(get(dataset, envir=globalenv()),
 			error=function(e) NULL)
 	})
-
+	
 	sv <- list(
 		mz = syncVal(mz(data())[1], function(mz) {
 			validate(need(mz, "invalid m/z value"))
@@ -112,10 +112,19 @@ selectView <- function(input, output, session, dataset) {
   
   clicks <- reactiveValues(x = c(), y = c())
   
-  plot_image <- reactive({ image(data()) })
+  plot_image <- reactive({ image(data(), ...) })
   
   output$selectROIView <- renderPlot({
-    plot_image()
+    print(plot_image())
+    if ( all(!is.na(clicks)) ) {
+      # add points at clicks
+      points(clicks$x, clicks$y, pch=4, lwd=4, cex=2, col="black")
+      # add solid lines to clicks
+      lines(clicks$x, clicks$y, pch=4, lwd=4, cex=2, col="black")
+      # add dashed line to show complete polygon
+      lines(c(clicks$x[length(clicks$x)], clicks$x[1]), c(clicks$y[length(clicks$y)], clicks$y[1]),
+            pch=4, lwd=4, cex=2, col="black", lty=2)
+    }
   })
   
   observeEvent(input$plot_click, {

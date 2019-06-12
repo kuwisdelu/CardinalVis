@@ -98,7 +98,7 @@ msiServer <- function(dataset) {
 
 }
 
-selectServer <- function(dataset) {
+selectServer <- function(dataset, ...) {
   
   function(input, output, session) {
     
@@ -112,7 +112,7 @@ selectServer <- function(dataset) {
     # run once on start
     observeEvent(input, {
       if ( !is.null(dataset) )
-        ret$roi <- callModule(selectView, "test_select", dataset)
+        ret$roi <- callModule(selectView, "test_select", dataset, ...)
     }, ignoreNULL = FALSE)
     
     observe({

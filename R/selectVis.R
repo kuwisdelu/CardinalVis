@@ -1,5 +1,5 @@
 
-selectVis <- function(dataset) {
+selectVis <- function(dataset, ...) {
   
 	if ( is.symbol(substitute(dataset)) )
 		dataset <- deparse(substitute(dataset))
@@ -7,7 +7,7 @@ selectVis <- function(dataset) {
 	data <- try(get(dataset, envir=globalenv()), silent=TRUE)
 
 	if ( inherits(data, get_supported_classes()) ) {
-  	selectedROI <- runApp(list(ui=selectUI(), server=selectServer(dataset)))
+  	selectedROI <- runApp(list(ui=selectUI(), server=selectServer(dataset, ...)))
   	return(selectedROI)
 	} else {
 	  ## update later
