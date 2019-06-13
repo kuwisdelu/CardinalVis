@@ -110,7 +110,13 @@ selectView <- function(input, output, session, dataset, ...) {
 	## return region of interest
 	sv[["selected_roi"]] <- syncVal(NULL)
   
-  clicks <- reactiveValues(x = c(), y = c())
+  sv[["region_coords"]] <- syncVal({
+    list(
+      list(x = c(), y = c())
+    )
+  })
+  
+	clicks <- reactiveValues(x = c(), y = c())
   
   plot_image <- reactive({ image(data(), ...) })
   
@@ -128,8 +134,23 @@ selectView <- function(input, output, session, dataset, ...) {
   })
   
   observeEvent(input$plot_click, {
-    clicks$x <- c(clicks$x, input$plot_click$x)
-    clicks$y <- c(clicks$y, input$plot_click$y)
+    
+    # update clicks to last region in list
+    clicks <- sv[["region_coords"]]()
+    last <- length(clicks)
+    current <- clicks[[last]]
+    current$x <- c(current$x, input$plot_click$x)
+    current$y <- c(current$y, input$plot_click$y)
+    clicks[[last]] <- current
+    
+    sv$region_coords(clicks)
+  })
+  
+  observeEvent(input$button_plus, {
+    # update last region in list
+    clicks <- sv[["region_coords"]]()
+    clicks <- list(clicks, list(x = c(), y = c()))
+    sv$region_coords(clicks)
   })
   
   observeEvent(input$button_select, {
