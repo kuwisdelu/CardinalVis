@@ -10,6 +10,8 @@ selectViewUI <- function(id) {
     fluidRow(
       actionButton(ns("button_select"), "Select"),
       actionButton(ns("button_plus"), "+")),
-    verbatimTextOutput(ns("info_box"))
+      actionButton(ns("button_debug"), "DEBUG"),
+      verbatimTextOutput(ns("info_box")
+    )
   )
 }

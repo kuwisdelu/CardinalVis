@@ -122,7 +122,7 @@ selectView <- function(input, output, session, dataset, ...) {
   
   output$selectROIView <- renderPlot({
     print(plot_image())
-    if ( all(!is.na(clicks)) ) {
+    if ( FALSE) {#all(!is.na(sv$region_coords())) ) {
       # add points at clicks
       points(clicks$x, clicks$y, pch=4, lwd=4, cex=2, col="black")
       # add solid lines to clicks
@@ -131,6 +131,30 @@ selectView <- function(input, output, session, dataset, ...) {
       lines(c(clicks$x[length(clicks$x)], clicks$x[1]), c(clicks$y[length(clicks$y)], clicks$y[1]),
             pch=4, lwd=4, cex=2, col="black", lty=2)
     }
+    
+    ## plot points and lines
+    regions <- sv$region_coords()
+    for ( i in seq(length(regions)) ) {  # speed up?
+      clicks <- regions[[i]]
+      if ( all(!is.na(clicks)) ) {
+        # add points at clicks
+        points(clicks$x, clicks$y, pch=4, lwd=4, cex=2, col="black")
+        # add solid lines to clicks
+        lines(clicks$x, clicks$y, pch=4, lwd=4, cex=2, col="black")
+        # add dashed line to show complete polygon
+        if (i == length(regions)) 
+          lty=2
+        else
+          lty=1
+        
+        lines(c(clicks$x[length(clicks$x)], clicks$x[1]), c(clicks$y[length(clicks$y)], clicks$y[1]),
+              pch=4, lwd=4, cex=2, col="black", lty=lty)
+      }
+    }
+  })
+  
+  observeEvent(input$button_debug, {
+    browser()
   })
   
   observeEvent(input$plot_click, {
@@ -149,12 +173,15 @@ selectView <- function(input, output, session, dataset, ...) {
   observeEvent(input$button_plus, {
     # update last region in list
     clicks <- sv[["region_coords"]]()
-    clicks <- list(clicks, list(x = c(), y = c()))
+    clicks[[length(clicks) + 1]] <- list(x = c(), y = c())
     sv$region_coords(clicks)
   })
   
   observeEvent(input$button_select, {
 
+      return()
+    
+    # fix this!
       roi <- reactive({
         Cardinal:::.selectRegion(clicks, pixelData(data()),
                 subset = plot_image()$subset, 
