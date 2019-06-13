@@ -8,7 +8,7 @@ selectVis <- function(dataset, ...) {
 
 	if ( inherits(data, get_supported_classes()) ) {
   	selectedROI <- runApp(list(ui=selectUI(), server=selectServer(dataset, ...)))
-  	return(selectedROI)
+  	return(invisible(selectedROI))
 	} else {
 	  ## update later
 	  print("unsupported type")
