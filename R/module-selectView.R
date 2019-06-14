@@ -118,10 +118,10 @@ selectView <- function(input, output, session, dataset, ...) {
   
 	clicks <- reactiveValues(x = c(), y = c())
   
-  plot_image <- reactive({ image(data(), ...) })
+  ionimage <- reactive({ image(data(), ...) })
   
   output$selectROIView <- renderPlot({
-    print(plot_image())
+    print(ionimage())
     if ( FALSE) {#all(!is.na(sv$region_coords())) ) {
       # add points at clicks
       points(clicks$x, clicks$y, pch=4, lwd=4, cex=2, col="black")
@@ -160,7 +160,7 @@ selectView <- function(input, output, session, dataset, ...) {
   observeEvent(input$plot_click, {
     
     # update clicks to last region in list
-    clicks <- sv[["region_coords"]]()
+    clicks <- isolate(sv$region_coords())
     last <- length(clicks)
     current <- clicks[[last]]
     current$x <- c(current$x, input$plot_click$x)
@@ -172,23 +172,24 @@ selectView <- function(input, output, session, dataset, ...) {
   
   observeEvent(input$button_plus, {
     # update last region in list
-    clicks <- sv[["region_coords"]]()
+    clicks <- isolate(sv$region_coords())
     clicks[[length(clicks) + 1]] <- list(x = c(), y = c())
     sv$region_coords(clicks)
   })
   
   observeEvent(input$button_select, {
 
-      return()
+    # compute region mask for each coord pair
+    regions <- isolate(sv$region_coords())
+    image <- isolate(ionimage())
+    rois <- lapply(regions, function(region) {
+      Cardinal:::.selectRegion(region, pixelData(data()), 
+                            subset = image$subset, 
+                            axs = image$coordnames)
+    })
     
-    # fix this!
-      roi <- reactive({
-        Cardinal:::.selectRegion(clicks, pixelData(data()),
-                subset = plot_image()$subset, 
-                axs = plot_image()$coordnames) })
-      
-      ## updates region of interest
-      sv$selected_roi(roi())
+    # TODO: condition to return: list, vector, factor
+    sv$selected_roi(rois)
       
   })
   
