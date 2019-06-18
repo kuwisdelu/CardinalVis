@@ -19,6 +19,8 @@ import("shinydashboard")
 
 import("Cardinal")
 
+import("shinyWidgets")
+
 export("msiVis")
 
 export("selectVis")
