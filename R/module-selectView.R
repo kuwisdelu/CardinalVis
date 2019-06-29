@@ -136,8 +136,8 @@ selectView <- function(input, output, session, dataset, ...) {
     names(sv$region_coords())
   })
   
-  sv[["region_selected"]] <- syncVal({
-    c("region1")
+  sv[["region_selected"]] <- reactive({
+    sv$region_names()[sapply(sv$region_coords(), function(region) region$selected)]
   })
   
   ionimage <- reactive({
@@ -248,17 +248,27 @@ selectView <- function(input, output, session, dataset, ...) {
   })
   
   observeEvent(input$button_plus, {
-    # update last region in list
-    clicks <- isolate(sv$region_coords())
+    print("button plus")
+    clicks <- sv$region_coords()
     cur_len <- length(clicks)
+    
+    # check if current region is empty / no clicks in region
+    if ( is.null(clicks[[cur_len]]$x) ) {
+      # do nothing
+      return()
+    }
+    
+    # update last region in list
     clicks[[cur_len + 1]] <- list(x = c(), y = c(), selected = T)
     region_name <- paste0("region", cur_len + 1)
     names(clicks)[cur_len + 1] <- region_name
     sv$region_coords(clicks)
     
     # selected by default
-    selected <- c(sv$region_selected(), region_name)
-    sv$region_selected(selected)
+    #selected <- c(sv$region_selected(), region_name)
+    #sv$region_selected(selected)
+    
+    #sv$region_names(names(clicks))
   })
   
   observeEvent(input$button_select, {
@@ -393,9 +403,30 @@ selectView <- function(input, output, session, dataset, ...) {
     )
   })
   
-  # change selected regions
+  # TODO: change selected regions
   observeEvent(input$region_picker, {
-    sv$region_selected(input$region_picker)
+    # regions <- sv$region_coords()
+    # select_index <- sv$region_names() %in% input$region_picker
+    # unselect_index <- !select_index
+    # 
+    # selected_regions <- sv$region_coords()[select_index]
+    # sub <- lapply(sub, function(s) {
+    #   s$selected <- FALSE
+    #   s
+    # })
+    # regions[unselect_index]<- sub
+    
+    # regions <- lapply(seq_along(regions), function(region_idx) {
+    #   region <- regions[[region_idx]]
+    #   if (sv$region_names()[region_idx] %in% input$region_picker) {
+    #     region$selected <- T
+    #   } else {
+    #     region$selected <- F
+    #   }
+    #   region
+    # })
+    # sv$region_coords(regions)
+    
   })
   
   # update regions
@@ -404,6 +435,25 @@ selectView <- function(input, output, session, dataset, ...) {
       choices = sv$region_names(),
       selected = sv$region_selected()
     )
+  })
+  
+  # region name
+  output$region_name_ui <- renderUI({
+    region_names <- sv$region_names()
+    last_name <- region_names[length(region_names)]
+    textInput(ns("region_name"), label = "Type to change region name",
+              value = last_name)
+  })
+  
+  region_name_input <- debounce(reactive({input$region_name}), 1000)
+  
+  observe({
+    if ( is.null(region_name_input()) ) return()
+    regions <- sv$region_coords()
+    region_names <- names(regions)
+    region_names[length(region_names)] <- region_name_input()
+    names(regions) <- region_names
+    sv$region_coords(regions)
   })
   
   #### ionimage input reactivity ####
