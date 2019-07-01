@@ -75,19 +75,21 @@ selectViewUI <- function(id) {
                  uiOutput(ns("subset")))
       ),
       box(
-        title = "Subset",
+        title = "Region of Interest",
         background = get_box_background(),
         collapsible = FALSE,
         width = 12,
-        fluidRow(style = "padding: 0px 15px 0px 15px;",
-          uiOutput(ns("region_picker_ui"))),
+        fluidRow(#style = "padding: 0px 15px 0px 15px;",
+          column(10, uiOutput(ns("region_picker_ui"))),
+          column(2, style = "padding: 25px 0px 0px 0px;", ## fix top padding
+               actionButton(ns("button_plus"), "+"))),
           #column(5, uiOutput(ns("region_picker_ui"))),
         fluidRow(
-          column(7, uiOutput(ns("region_name_ui"))),
+          column(9, uiOutput(ns("region_name_ui"))),
           column(3, style = "padding: 25px 0px 0px 0px;", ## fix top padding
-                 actionButton(ns("button_name_update"), "update")),
-          column(2, style = "padding: 25px 0px 0px 0px;", ## fix top padding
-                 actionButton(ns("button_plus"), "+"))
+                 actionButton(ns("button_name_update"), "update"))
+          # column(2, style = "padding: 25px 0px 0px 0px;", ## fix top padding
+          #        actionButton(ns("button_plus"), "+"))
         ),
         fluidRow(column(
           6,

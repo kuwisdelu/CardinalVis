@@ -405,27 +405,22 @@ selectView <- function(input, output, session, dataset, ...) {
   
   # TODO: change selected regions
   observeEvent(input$region_picker, {
-    # regions <- sv$region_coords()
-    # select_index <- sv$region_names() %in% input$region_picker
-    # unselect_index <- !select_index
-    # 
-    # selected_regions <- sv$region_coords()[select_index]
-    # sub <- lapply(sub, function(s) {
-    #   s$selected <- FALSE
-    #   s
-    # })
-    # regions[unselect_index]<- sub
     
-    # regions <- lapply(seq_along(regions), function(region_idx) {
-    #   region <- regions[[region_idx]]
-    #   if (sv$region_names()[region_idx] %in% input$region_picker) {
-    #     region$selected <- T
-    #   } else {
-    #     region$selected <- F
-    #   }
-    #   region
-    # })
-    # sv$region_coords(regions)
+    if ( is.null(input$region_picker) ) return()
+    
+    regions <- sv$region_coords()
+    
+    regions <- lapply(seq_along(regions), function(region_idx) {
+      region <- regions[[region_idx]]
+      if (sv$region_names()[region_idx] %in% input$region_picker) {
+        region$selected <- T
+      } else {
+        region$selected <- F
+      }
+      region
+    })
+    names(regions) <- sv$region_names()
+    sv$region_coords(regions)
     
   })
   
