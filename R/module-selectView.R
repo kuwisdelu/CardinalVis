@@ -441,17 +441,18 @@ selectView <- function(input, output, session, dataset, ...) {
   output$region_name_ui <- renderUI({
     region_names <- sv$region_names()
     last_name <- region_names[length(region_names)]
-    textInput(ns("region_name"), label = "Type to change region name",
+    textInput(ns("region_name"), label = "Region name",
               value = last_name)
   })
   
-  region_name_input <- debounce(reactive({input$region_name}), 1000)
-  
-  observe({
-    if ( is.null(region_name_input()) ) return()
+  observeEvent(input$button_name_update, {
+    new_name <- isolate({input$region_name})
+    if ( is.null(new_name) ) return()
     regions <- sv$region_coords()
     region_names <- names(regions)
-    region_names[length(region_names)] <- region_name_input()
+    last_name <- region_names[length(region_names)]
+    if ( new_name == last_name ) return()
+    region_names[length(region_names)] <- new_name
     names(regions) <- region_names
     sv$region_coords(regions)
   })

@@ -83,7 +83,9 @@ selectViewUI <- function(id) {
           uiOutput(ns("region_picker_ui"))),
           #column(5, uiOutput(ns("region_picker_ui"))),
         fluidRow(
-          column(10, uiOutput(ns("region_name_ui"))),
+          column(7, uiOutput(ns("region_name_ui"))),
+          column(3, style = "padding: 25px 0px 0px 0px;", ## fix top padding
+                 actionButton(ns("button_name_update"), "update")),
           column(2, style = "padding: 25px 0px 0px 0px;", ## fix top padding
                  actionButton(ns("button_plus"), "+"))
         ),
