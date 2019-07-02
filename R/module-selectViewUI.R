@@ -52,6 +52,12 @@ selectViewUI <- function(id) {
         ),
         uiOutput(ns("selectViewUI"))
       )),
+      # style slider to remove background blue
+      tags$style(HTML(".irs-bar, .irs-bar-edge {
+            border-top: 1px solid transparent; 
+            border-bottom: 1px solid transparent; 
+            background: transparent;  
+            border: 1px solid transparent;}")),
       fluidRow(style = "padding: 20px 20px 0px 20px;",
                uiOutput(ns("mz_slider_ui")))
     ),
