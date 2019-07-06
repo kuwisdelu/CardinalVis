@@ -200,37 +200,49 @@ selectView <- function(input, output, session, dataset, ...) {
     )
   })
   
-  output$selectROIView <- renderPlot({
-    print(ionimage(),
-          xlim=sv$ionimage_xylim()[c(1,2)],
-          ylim=sv$ionimage_xylim()[c(3,4)],
-          zlim=sv$ionimage_intensity_range())
-    
-    ## plot points and lines
-    regions <- sv$region_coords()
-    for (i in seq(length(regions))) {
-      # speed up?
-      clicks <- regions[[i]]
-      if (all(!is.na(clicks))) {
-        # add points at clicks
-        points(clicks$x, clicks$y, pch = 4, lwd = 4,
-          cex = 2, col = "black")
-        # add solid lines to clicks
-        lines(clicks$x, clicks$y, pch = 4, lwd = 4,
-          cex = 2, col = "black")
-        # add dashed line to show complete polygon
-        if (i == length(regions)) lty = 2
-        else lty = 1
-        
-        lines(
-          c(clicks$x[length(clicks$x)], clicks$x[1]),
-          c(clicks$y[length(clicks$y)], clicks$y[1]),
-          pch = 4, lwd = 4, cex = 2, col = "black", lty = lty
-        )
-      }
-    }
-  })
+  plot_null <- function(...) {
+    par(mar=c(3,3,3,1), mgp=c(1.5,0.5,0),
+        cex.axis=1, cex.lab=1)
+    plot(0, 0, type='n', xlab="", ylab="",
+         xaxt='n', yaxt='n')
+    text(0, 0, "Nothing to plot.")
+  }
   
+  ## TODO: need to look for better colors and font sizes
+  plot_ploygons <- function() {
+    done_black_hex = "#bdbdbd"
+    current_black_hex = "#636363"
+    regions <- sv$region_coords()
+    lapply(seq_along(regions), function(idx) {
+      region <- regions[[idx]]
+      if ( all(!is.na(region)) ) {
+        points(region$x, region$y, pch = 4, lwd = 4, cex = 2, col = current_black_hex)
+        if (idx == length(regions)) {
+          lines(region$x, region$y, pch = 4, lwd = 4, cex = 2, col = current_black_hex)
+          lines(x = c(region$x[length(region$x)], region$x[1]), 
+                y = c(region$y[length(region$y)], region$y[1]),
+                lty = 2, pch = 4, lwd = 4, cex = 2, col = current_black_hex)
+        } else {
+          polygon(region$x, region$y, border = done_black_hex)
+        }
+      }
+    })
+  }
+  
+  output$selectROIView <- renderPlot({
+    validate(
+      need(sv$ionimage_xylim(), "invalid x/y limits"),
+      need(!anyNA(sv$ionimage_intensity_range()), "invalid intensity range")
+    )
+    tryCatch({
+        print(ionimage(),
+          xlim = sv$ionimage_xylim()[c(1, 2)],
+          ylim = sv$ionimage_xylim()[c(3, 4)],
+          zlim = sv$ionimage_intensity_range())
+        plot_ploygons()
+      }, warning = plot_null, error = plot_null)
+  }, bg="transparent")
+    
   observeEvent(input$button_debug, {
     browser()
   })
@@ -264,11 +276,6 @@ selectView <- function(input, output, session, dataset, ...) {
     names(clicks)[cur_len + 1] <- region_name
     sv$region_coords(clicks)
     
-    # selected by default
-    #selected <- c(sv$region_selected(), region_name)
-    #sv$region_selected(selected)
-    
-    #sv$region_names(names(clicks))
   })
   
   observeEvent(input$button_select, {
@@ -381,7 +388,7 @@ selectView <- function(input, output, session, dataset, ...) {
     choices <- sv$subset_choices()
     selected <- sv$subset()
     selectInput(ns("subset"), "Subset", choices = choices,
-      selected = selected, multiple = TRUE
+      selected = selected, multiple = FALSE
     )
   })
   
@@ -409,7 +416,6 @@ selectView <- function(input, output, session, dataset, ...) {
     if ( is.null(input$region_picker) ) return()
     
     regions <- sv$region_coords()
-    
     regions <- lapply(seq_along(regions), function(region_idx) {
       region <- regions[[region_idx]]
       if (sv$region_names()[region_idx] %in% input$region_picker) {
