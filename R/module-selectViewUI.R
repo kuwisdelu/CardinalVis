@@ -99,12 +99,12 @@ selectViewUI <- function(id) {
         ),
         fluidRow(column(
           6,
-          actionButton(ns("button_select"), "Select as list",
+          actionButton(ns("button_select"), "Return as list",
                        width = "100%")
         ),
         column(
           6,
-          actionButton(ns("button_select_factor"), "Select as factor",
+          actionButton(ns("button_select_factor"), "Return as factor",
                        width = "100%")
         ))
       ))

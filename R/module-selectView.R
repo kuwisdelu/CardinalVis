@@ -1,9 +1,5 @@
 
 # TODO:
-## * region selection for multiple runs?
-## * logical OR/factor of selected
-## * speed up plotting (use ploygons)
-## * custom name regions
 ## * undo click
 ## * removing regions (can just unselect?)
 
@@ -26,30 +22,20 @@ selectView <- function(input, output, session, dataset, ...) {
       mz(data())[features(data(), mz = mz)]
     }),
     mz_tol = syncVal(0.001),
-    xy = syncVal(unname(unlist(coord(
-      data()
-    )[1, c(1, 2)]))),
-    xy_names = syncVal(names(coord(data(
-    )))[c(1, 2)]),
+    xy = syncVal(unname(unlist(coord(data())[1, c(1, 2)]))),
+    xy_names = syncVal(names(coord(data()))[c(1, 2)]),
     coord_names = syncVal(coordnames(data())),
-    ionimage_xylim = syncVal(c(range(coord(
-      data()
-    )[, 1]),
-    range(coord(
-      data()
-    )[, 2]))),
-    spectrum_massrange = syncVal(range(mz(data(
-    )))),
+    ionimage_xylim = syncVal(c(range(coord(data())[, 1]),
+    range(coord(data())[, 2]))),
+    spectrum_massrange = syncVal(range(mz(data()))),
     ionimage_intensity_range = syncVal(NULL),
     spectrum_intensity_range = syncVal(NULL),
     ionimage_contrast = syncVal("none"),
     ionimage_smoothing = syncVal("none"),
     ionimage_colorscale = syncVal("viridis"),
     ionimage_function = syncVal("mean"),
-    spectrum_plotvar = syncVal(names(imageData(data(
-    )))[1]),
-    ionimage_plotvar = syncVal(names(imageData(data(
-    )))[1]),
+    spectrum_plotvar = syncVal(names(imageData(data()))[1]),
+    ionimage_plotvar = syncVal(names(imageData(data()))[1]),
     mz_2 = syncVal(NA),
     mz_3 = syncVal(NA),
     xy_2 = syncVal(c(NA, NA)),
@@ -125,21 +111,6 @@ selectView <- function(input, output, session, dataset, ...) {
     c(names(imageData(data()))[1], names(featureData(data())))
   })
   
-  ## region of interest
-  sv[["selected_roi"]] <- syncVal(NULL)
-  
-  sv[["region_coords"]] <- syncVal({
-    list("region1" = list(x = c(), y = c(), selected = T))
-  })
-  
-  sv[["region_names"]] <- reactive({
-    names(sv$region_coords())
-  })
-  
-  sv[["region_selected"]] <- reactive({
-    sv$region_names()[sapply(sv$region_coords(), function(region) region$selected)]
-  })
-  
   ionimage <- reactive({
     validate(
       need(sv$mz(), "invalid m/z value"),
@@ -178,6 +149,23 @@ selectView <- function(input, output, session, dataset, ...) {
       colorscale = col.map(sv$ionimage_colorscale(), 100),
       subset = sv$subset_logical()
     )
+  })
+  
+  ## region of interest
+  sv[["selected_roi"]] <- syncVal(NULL)
+  
+  sv[["region_coords"]] <- syncVal({
+    list("region1" = list(x = c(), y = c(), 
+                          selected = T, 
+                          subset = sv$subset_logical()))
+  })
+  
+  sv[["region_names"]] <- reactive({
+    names(sv$region_coords())
+  })
+  
+  sv[["region_selected"]] <- reactive({
+    sv$region_names()[sapply(sv$region_coords(), function(region) region$selected)]
   })
   
   output$selectViewUI <- renderUI({
@@ -260,7 +248,6 @@ selectView <- function(input, output, session, dataset, ...) {
   })
   
   observeEvent(input$button_plus, {
-    print("button plus")
     clicks <- sv$region_coords()
     cur_len <- length(clicks)
     
@@ -271,31 +258,51 @@ selectView <- function(input, output, session, dataset, ...) {
     }
     
     # update last region in list
-    clicks[[cur_len + 1]] <- list(x = c(), y = c(), selected = T)
+    clicks[[cur_len + 1]] <- list(x = c(), y = c(), 
+                                  selected = T, 
+                                  subset = sv$subset_logical())
     region_name <- paste0("region", cur_len + 1)
     names(clicks)[cur_len + 1] <- region_name
     sv$region_coords(clicks)
     
   })
   
-  observeEvent(input$button_select, {
-    # compute region mask for each coord pair
+  # compute region mask for each coord pair
+  compute_rois <- function() {
     regions <- sv$region_coords()
     selected <- sv$region_selected()
-    image <- isolate(ionimage())
+    image <- ionimage()
     selected_regions <- regions[selected]
     rois <- lapply(selected_regions, function(region) {
       Cardinal:::.selectRegion(
         region,
         pixelData(data()),
-        subset = image$subset,
+        subset = region$subset,
         axs = image$coordnames
       )
     })
-    
-    # TODO: condition to return: list, vector, factor
+    rois
+  }
+  
+  observeEvent(input$button_select, {
+    rois <- compute_rois()
     sv$selected_roi(rois)
-    
+  })
+  
+  makeFactor_fromList <- function(regions) {
+    str <- ""
+    for (idx in seq_along(regions)) 
+      str <- paste0(str, glue::glue('{names(regions)[idx]} = regions[["{names(regions)[idx]}"]],'))
+    str <- substr(str, 1, nchar(str) - 1)
+    print(str)
+    str <- paste0( "makeFactor(", str, ")")
+    eval(parse(text=str))
+  }
+  
+  observeEvent(input$button_select_factor, {
+    rois <- compute_rois()
+    roi_as_factor <- makeFactor_fromList(rois)
+    sv$selected_roi(roi_as_factor)
   })
   
   # brush selectView
@@ -395,7 +402,15 @@ selectView <- function(input, output, session, dataset, ...) {
   # change subset
   observeEvent(input$subset, {
     validate(need(input$subset, "invalid subset"))
-    sv$subset(input$subset)
+    sv$subset(input$subset)   
+  })
+    
+  observe({
+    # change subset of current region when subset changes
+    validate(need(sv$subset_logical(), "invalid subset"))
+    regions <- isolate(sv$region_coords())
+    regions[[length(regions)]]$subset <- sv$subset_logical()
+    sv$region_coords(regions)
   })
   
   # region picker
