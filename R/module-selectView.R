@@ -16,12 +16,19 @@ selectView <- function(input, output, session, dataset, ...) {
     )
   })
   
+  dot_args <- list(...)
+  if_else_helper <- function(name, value) {
+    if ( is.null(dot_args[[name]]) ) 
+      value
+    else
+      dot_args[[name]]
+  }
   sv <- list(
-    mz = syncVal(mz(data())[1], function(mz) {
+    mz = syncVal(if_else_helper("mz", mz(data())[1]), function(mz) {
       validate(need(mz, "invalid m/z value"))
       mz(data())[features(data(), mz = mz)]
     }),
-    mz_tol = syncVal(0.001),
+    mz_tol = syncVal(if_else_helper("plusminus", 0.001)),
     xy = syncVal(unname(unlist(coord(data())[1, c(1, 2)]))),
     xy_names = syncVal(names(coord(data()))[c(1, 2)]),
     coord_names = syncVal(coordnames(data())),
@@ -425,7 +432,6 @@ selectView <- function(input, output, session, dataset, ...) {
     )
   })
   
-  # TODO: change selected regions
   observeEvent(input$region_picker, {
     
     if ( is.null(input$region_picker) ) return()
