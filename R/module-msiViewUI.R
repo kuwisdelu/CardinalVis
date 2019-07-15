@@ -4,6 +4,24 @@ msiViewUI <- function(id, label = "Data Viewer") {
 	fluidRow(
 		tags$head(tags$style(HTML(".col-sm-12 {padding: 0px;}"))),
 		tags$head(tags$style(HTML(".box {margin: 5px;}"))),
+		tags$head(tags$script(HTML(
+     "$(document).on('shiny:busy', function(event) {
+      timeoutbusy = setTimeout(function() {
+        $('#plot_div').css('display', 'none');
+        $('#spectrum_div').css('display', 'none');
+        $('#spinner1_div').css('display', 'block');
+        $('#spinner2_div').css('display', 'block');
+      }, 500);
+    });
+    
+    $(document).on('shiny:idle', function(event) {
+      clearTimeout(timeoutbusy)
+      $('#plot_div').css('display', 'block');
+      $('#spectrum_div').css('display', 'block');
+      $('#spinner1_div').css('display', 'none');
+      $('#spinner2_div').css('display', 'none');
+    });"))),
+		
 		column(width=9,
 			verticalLayout(
 				tags$div(

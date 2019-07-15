@@ -19,6 +19,7 @@ msiUI <- function() {
 		),
 		dashboardBody(
 			get_dashboard_bg_color(),
+			get_spinner_style(),
 			tags$style(type="text/css",
 				".shiny-input-container 
 				{padding: 0px !important;}"),

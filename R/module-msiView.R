@@ -110,27 +110,30 @@ msiView <- function(input, output, session, dataset) {
 	#### plot output ####
 
 	output$ionimage_plot <- renderUI({
-		tags$div(
-			tags$style(type = "text/css",
-				paste0("#", ns("ionimage"), " {height: calc(100vh - 300px) !important;}")),
-			plotOutput(ns("ionimage"),
-				click=clickOpts(id=ns("ionimage_click")),
-				dblclick=dblclickOpts(id=ns("ionimage_dblclick")),
-				brush=brushOpts(id=ns("ionimage_brush"),
-					direction="xy", resetOnNew=TRUE),
-				height="auto")
-		)
+		tags$div(style="height: calc(100vh - 300px);",
+			fluidRow(
+  			tags$div(id="plot_div", 
+    			plotOutput(ns("ionimage"),
+    				click=clickOpts(id=ns("ionimage_click")),
+    				dblclick=dblclickOpts(id=ns("ionimage_dblclick")),
+    				brush=brushOpts(id=ns("ionimage_brush"),
+    					direction="xy", resetOnNew=TRUE)
+    				)),
+  			tags$div(id="spinner1_div", tags$div(class="loader"))
+			))
 	})
 
 	output$spectrum_plot <- renderUI({
-		tags$div(
-			plotOutput(ns("spectrum"),
-				click=clickOpts(id=ns("spectrum_click")),
-				dblclick=dblclickOpts(id=ns("spectrum_dblclick")),
-				brush=brushOpts(id=ns("spectrum_brush"),
-					direction="x", resetOnNew=TRUE),
-				height="200px")
-		)
+	  tags$div(style = "height: 200px;",
+      fluidRow(#style = "height: 200px;",
+    		tags$div(id="spectrum_div",
+    			plotOutput(ns("spectrum"), height = "200px",
+    				click=clickOpts(id=ns("spectrum_click")),
+    				dblclick=dblclickOpts(id=ns("spectrum_dblclick")),
+    				brush=brushOpts(id=ns("spectrum_brush"),
+    					direction="x", resetOnNew=TRUE))),
+  			tags$div(id="spinner2_div", tags$div(class="loader"))
+		))
 	})
 
 	plot_null <- function(...) {
