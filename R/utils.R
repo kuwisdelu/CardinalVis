@@ -115,6 +115,8 @@ ionimage_function_options <- function() {
 	c("mean", "sum", "max")
 }
 
+# returns css for loader in head-style
+# https://github.com/lukehaas/css-loaders/blob/step2/css/load1.css
 get_spinner_style <- function() {
   tags$head(tags$style(HTML(".loader,
 .loader:before,
