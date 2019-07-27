@@ -205,20 +205,20 @@ selectView <- function(input, output, session, dataset, ...) {
   
   ## TODO: need to look for better colors and font sizes
   plot_ploygons <- function() {
-    done_black_hex = "#bdbdbd"
-    current_black_hex = "#636363"
+    done_black_hex = "#bababa"
+    current_black_hex = "#bababa"
     regions <- sv$region_coords()
     lapply(seq_along(regions), function(idx) {
       region <- regions[[idx]]
       if ( all(!is.na(region)) ) {
-        points(region$x, region$y, pch = 4, lwd = 4, cex = 2, col = current_black_hex)
+        points(region$x, region$y, pch = 4, lwd = 4, cex = 1.5, col = current_black_hex)
         if (idx == length(regions)) {
           lines(region$x, region$y, pch = 4, lwd = 4, cex = 2, col = current_black_hex)
           lines(x = c(region$x[length(region$x)], region$x[1]), 
                 y = c(region$y[length(region$y)], region$y[1]),
                 lty = 2, pch = 4, lwd = 4, cex = 2, col = current_black_hex)
         } else {
-          polygon(region$x, region$y, border = done_black_hex)
+          polygon(region$x, region$y, border = done_black_hex, lwd=2)
         }
       }
     })
@@ -280,6 +280,14 @@ selectView <- function(input, output, session, dataset, ...) {
     selected <- sv$region_selected()
     image <- ionimage()
     selected_regions <- regions[selected]
+    
+    # check and remove null regions
+    not_null_regions <- which(!sapply(selected_regions, function(region) {
+      any(is.null(region$x))
+    }))
+    selected_regions <- selected_regions[not_null_regions]
+    
+    # compute region of interest
     rois <- lapply(selected_regions, function(region) {
       Cardinal:::.selectRegion(
         region,
@@ -288,7 +296,7 @@ selectView <- function(input, output, session, dataset, ...) {
         axs = image$coordnames
       )
     })
-    rois
+    rois  # return
   }
   
   observeEvent(input$button_select, {
@@ -296,12 +304,14 @@ selectView <- function(input, output, session, dataset, ...) {
     sv$selected_roi(rois)
   })
   
+  # creates ROI factor from list
+  # create a string command of the form: makeFactor(region1 = regions[["region1"]], ...)
+  # the string is then evaluated to get factors
   makeFactor_fromList <- function(regions) {
     str <- ""
     for (idx in seq_along(regions)) 
       str <- paste0(str, glue::glue('{names(regions)[idx]} = regions[["{names(regions)[idx]}"]],'))
     str <- substr(str, 1, nchar(str) - 1)
-    print(str)
     str <- paste0( "makeFactor(", str, ")")
     eval(parse(text=str))
   }
