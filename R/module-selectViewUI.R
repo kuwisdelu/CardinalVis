@@ -85,27 +85,23 @@ selectViewUI <- function(id) {
         background = get_box_background(),
         collapsible = FALSE,
         width = 12,
-        fluidRow(#style = "padding: 0px 15px 0px 15px;",
+        fluidRow(
           column(10, uiOutput(ns("region_picker_ui"))),
           column(2, style = "padding: 25px 0px 0px 0px;", ## fix top padding
                actionButton(ns("button_plus"), "+"))),
-          #column(5, uiOutput(ns("region_picker_ui"))),
         fluidRow(
           column(9, uiOutput(ns("region_name_ui"))),
           column(3, style = "padding: 25px 0px 0px 0px;", ## fix top padding
                  actionButton(ns("button_name_update"), "update"))
-          # column(2, style = "padding: 25px 0px 0px 0px;", ## fix top padding
-          #        actionButton(ns("button_plus"), "+"))
         ),
-        fluidRow(column(
-          6,
-          actionButton(ns("button_select"), "Return as list",
-                       width = "100%")
-        ),
-        column(
-          6,
-          actionButton(ns("button_select_factor"), "Return as factor",
-                       width = "100%")
+        checkboxGroupInput(ns("options_checkbox"), label = "Plot options",
+                           choices = list("Show region names on plot" = "names",
+                                     "Show unseleted regions on plot" = "shapes"),
+                           selected = c("names", "shapes")),
+        fluidRow(column(6, actionButton(ns("button_select"), 
+                        "Return as list", width = "100%")),
+        column(6, actionButton(ns("button_select_factor"), 
+                        "Return as factor", width = "100%")
         ))
       ))
   ),

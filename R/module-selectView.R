@@ -1,9 +1,5 @@
 
-# TODO:
-## * undo click
-## * removing regions (can just unselect?)
-
-selectView <- function(input, output, session, dataset, ...) {
+selectView <- function(input, output, session, dataset, ..., simplify = FALSE) {
   #### session variables ####
   
   ns <- session$ns
@@ -158,12 +154,13 @@ selectView <- function(input, output, session, dataset, ...) {
     )
   })
   
-  ## region of interest
+  ## region of interest variables
   sv[["selected_roi"]] <- syncVal(NULL)
   
   sv[["region_coords"]] <- syncVal({
     list("region1" = list(x = c(), y = c(), 
                           selected = T, 
+                          subset_name = sv$subset_choices()[1],
                           subset = sv$subset_logical()))
   })
   
@@ -173,6 +170,15 @@ selectView <- function(input, output, session, dataset, ...) {
   
   sv[["region_selected"]] <- reactive({
     sv$region_names()[sapply(sv$region_coords(), function(region) region$selected)]
+  })
+  
+  sv[["region_subset_names"]] <- reactive({
+    sapply(sv$region_coords(), function(region) { region$subset_name })
+  })
+  
+  # plot options
+  sv[["plot_options"]] <- syncVal({
+    c("names" = T, "shapes" = T)
   })
   
   output$selectViewUI <- renderUI({
@@ -203,24 +209,47 @@ selectView <- function(input, output, session, dataset, ...) {
     text(0, 0, "Nothing to plot.")
   }
   
-  ## TODO: need to look for better colors and font sizes
+  # function to overlay current region selections on plot
+  ## centroid calculated by taking mean of all clicked point, 
+  ## can cause problem for convex polygons.
+  ## alternatively, use https://en.wikipedia.org/wiki/Centroid#Of_a_polygon
   plot_ploygons <- function() {
-    done_black_hex = "#bababa"
-    current_black_hex = "#bababa"
+    # defind colors
+    selected_hex = "#bdbdbd"
+    unselected_hex = "#525252"
+    
     regions <- sv$region_coords()
     lapply(seq_along(regions), function(idx) {
       region <- regions[[idx]]
-      if ( all(!is.na(region)) ) {
-        points(region$x, region$y, pch = 4, lwd = 4, cex = 1.5, col = current_black_hex)
+      if ( !is.null(region$x) ) {  # if not null region
         if (idx == length(regions)) {
-          lines(region$x, region$y, pch = 4, lwd = 4, cex = 2, col = current_black_hex)
+          # plot points, line, and dashed line if current region
+          points(region$x, region$y, pch = 4, lwd = 4, 
+                 cex = 1.5, col = selected_hex)
+          lines(region$x, region$y, lwd = 4, col = selected_hex)
           lines(x = c(region$x[length(region$x)], region$x[1]), 
                 y = c(region$y[length(region$y)], region$y[1]),
-                lty = 2, pch = 4, lwd = 4, cex = 2, col = current_black_hex)
+                lty = 3, lwd = 4, col = selected_hex)
         } else {
-          polygon(region$x, region$y, border = done_black_hex, lwd=2)
+          # else plot polygon and names
+          if ( region$selected ) {
+            polygon(region$x, region$y, border = selected_hex, lwd = 2)
+            if ( sv$plot_options()['names'] )
+              text(mean(region$x), mean(region$y), names(regions)[idx],
+                 cex = 1.5, col = selected_hex)
+          }
+          else {
+            # plot unselected only if shapes options is TRUE
+            if ( sv$plot_options()['shapes'] ) {
+              polygon(region$x, region$y, border = unselected_hex, lwd = 2)
+              if ( sv$plot_options()['names'] )
+                text(mean(region$x), mean(region$y), names(regions)[idx],
+                   cex = 1.5, col = unselected_hex)
+            }
+          }
+          
         }
-      }
+      } 
     })
   }
   
@@ -267,11 +296,11 @@ selectView <- function(input, output, session, dataset, ...) {
     # update last region in list
     clicks[[cur_len + 1]] <- list(x = c(), y = c(), 
                                   selected = T, 
+                                  subset_name = input$subset,
                                   subset = sv$subset_logical())
     region_name <- paste0("region", cur_len + 1)
     names(clicks)[cur_len + 1] <- region_name
     sv$region_coords(clicks)
-    
   })
   
   # compute region mask for each coord pair
@@ -296,6 +325,11 @@ selectView <- function(input, output, session, dataset, ...) {
         axs = image$coordnames
       )
     })
+    
+    # try to simplify list to array if needed
+    if ( simplify & length(rois) == 1)
+      rois <- rois[[1]]
+    
     rois  # return
   }
   
@@ -329,6 +363,13 @@ selectView <- function(input, output, session, dataset, ...) {
     xylim <- c(p$xmin, p$xmax, p$ymin, p$ymax)
     pos <- c((p$xmin + p$xmax) / 2, (p$ymin + p$ymax) / 2)
     sv$ionimage_xylim(xylim)
+  })
+  
+  observe({
+    # do not validate input$options_checkbox, can be null
+    new_options <- c("names", "shapes") %in% input$options_checkbox
+    names(new_options) <- c("names", "shapes")
+    sv$plot_options(new_options)
   })
   
   #### nav input reactivity ####
@@ -427,19 +468,32 @@ selectView <- function(input, output, session, dataset, ...) {
     validate(need(sv$subset_logical(), "invalid subset"))
     regions <- isolate(sv$region_coords())
     regions[[length(regions)]]$subset <- sv$subset_logical()
+    regions[[length(regions)]]$subset_name <- isolate(input$subset)
     sv$region_coords(regions)
   })
   
   # region picker
   output$region_picker_ui <- renderUI({
-    pickerInput(
-      inputId = ns("region_picker"), 
-      label = "Select regions to return", 
-      choices = sv$region_names(), multiple = TRUE,
-      selected = sv$region_selected(),
-      options = list(`actions-box` = TRUE,
-                     size = 5)
-    )
+    if ( length(sv$subset_choices()) > 1 )
+      pickerInput(
+        inputId = ns("region_picker"), 
+        label = "Select regions to return", 
+        choices = sv$region_names(), multiple = TRUE,
+        selected = sv$region_selected(),
+        options = list(`actions-box` = TRUE,
+                       size = 5),
+        choicesOpt = list(
+          subtext = sv$region_subset_names()
+        ))
+      else 
+        pickerInput(
+          inputId = ns("region_picker"), 
+          label = "Select regions to return", 
+          choices = sv$region_names(), multiple = TRUE,
+          selected = sv$region_selected(),
+          options = list(`actions-box` = TRUE,
+                         size = 5)
+          )
   })
   
   observeEvent(input$region_picker, {
@@ -463,10 +517,19 @@ selectView <- function(input, output, session, dataset, ...) {
   
   # update regions
   observe({
-    updatePickerInput(session, "region_picker",
-      choices = sv$region_names(),
-      selected = sv$region_selected()
-    )
+    if ( length(sv$subset_choices()) > 1 )
+      updatePickerInput(session, "region_picker",
+        choices = sv$region_names(),
+        selected = sv$region_selected(),
+        choicesOpt = list(
+          subtext = sv$region_subset_names()
+        )
+      )
+    else 
+      updatePickerInput(session, "region_picker",
+        choices = sv$region_names(),
+        selected = sv$region_selected()
+      )
   })
   
   # region name
