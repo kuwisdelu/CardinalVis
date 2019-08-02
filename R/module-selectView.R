@@ -157,11 +157,10 @@ selectView <- function(input, output, session, dataset, ..., simplify = FALSE) {
   ## region of interest variables
   sv[["selected_roi"]] <- syncVal(NULL)
   
-  sv[["region_coords"]] <- syncVal({
-    list("region1" = list(x = c(), y = c(), 
-                          selected = T, 
-                          subset_name = sv$subset_choices()[1],
-                          subset = sv$subset_logical()))
+  sv[["region_coords"]] <- syncVal({})
+  
+  sv[["current_region_coords"]] <- syncVal({
+    list(x = c(), y = c())
   })
   
   sv[["region_names"]] <- reactive({
@@ -180,6 +179,8 @@ selectView <- function(input, output, session, dataset, ..., simplify = FALSE) {
   sv[["plot_options"]] <- syncVal({
     c("names" = T, "shapes" = T)
   })
+  
+  ## ionimage and interaction ##
   
   output$selectViewUI <- renderUI({
     tags$div(
@@ -218,38 +219,27 @@ selectView <- function(input, output, session, dataset, ..., simplify = FALSE) {
     selected_hex = "#bdbdbd"
     unselected_hex = "#525252"
     
-    regions <- sv$region_coords()
-    lapply(seq_along(regions), function(idx) {
-      region <- regions[[idx]]
-      if ( !is.null(region$x) ) {  # if not null region
-        if (idx == length(regions)) {
-          # plot points, line, and dashed line if current region
-          points(region$x, region$y, pch = 4, lwd = 4, 
-                 cex = 1.5, col = selected_hex)
-          lines(region$x, region$y, lwd = 4, col = selected_hex)
-          lines(x = c(region$x[length(region$x)], region$x[1]), 
-                y = c(region$y[length(region$y)], region$y[1]),
-                lty = 3, lwd = 4, col = selected_hex)
-        } else {
-          # else plot polygon and names
-          if ( region$selected ) {
-            polygon(region$x, region$y, border = selected_hex, lwd = 2)
-            if ( sv$plot_options()['names'] )
-              text(mean(region$x), mean(region$y), names(regions)[idx],
-                 cex = 1.5, col = selected_hex)
-          }
-          else {
-            # plot unselected only if shapes options is TRUE
-            if ( sv$plot_options()['shapes'] ) {
-              polygon(region$x, region$y, border = unselected_hex, lwd = 2)
-              if ( sv$plot_options()['names'] )
-                text(mean(region$x), mean(region$y), names(regions)[idx],
-                   cex = 1.5, col = unselected_hex)
-            }
-          }
-          
-        }
-      } 
+    # add current selection
+    sel <- sv$current_region_coords()
+    points(sel$x, sel$y, pch = 4, lwd = 4, 
+           cex = 1.5, col = selected_hex)
+    lines(sel$x, sel$y, lwd = 4, col = selected_hex)
+    lines(x = c(sel$x[length(sel$x)], sel$x[1]),
+          y = c(sel$y[length(sel$y)], sel$y[1]),
+          lty = 3, lwd = 4, col = selected_hex)
+    
+    lapply(sv$region_coords(), function(region) {
+      if (region$selected)
+        color = selected_hex
+      else {
+        if ( !sv$plot_options()['shapes'] ) return()  # do not draw
+        color = unselected_hex
+      }
+      
+      polygon(region$x, region$y, border = color, lwd = 2)
+      if ( sv$plot_option()['names'] ) 
+        text(mean(region$x), mean(region$y), region$name,
+             cex = 1.5, col = color)
     })
   }
   
@@ -264,96 +254,19 @@ selectView <- function(input, output, session, dataset, ..., simplify = FALSE) {
           ylim = sv$ionimage_xylim()[c(3, 4)],
           zlim = sv$ionimage_intensity_range())
         plot_ploygons()
-      }, warning = plot_null, error = plot_null)
+       }, warning = plot_null, error = plot_null)
   }, bg="transparent")
     
   observeEvent(input$button_debug, {
     browser()
   })
   
+  # store click location on double click
   observeEvent(input$selectView_dbclick, {
-    # update clicks to last region in list
-    clicks <- isolate(sv$region_coords())
-    last <- length(clicks)
-    current <- clicks[[last]]
-    current$x <- c(current$x, input$selectView_dbclick$x)
-    current$y <- c(current$y, input$selectView_dbclick$y)
-    clicks[[last]] <- current
-    
-    sv$region_coords(clicks)
-  })
-  
-  observeEvent(input$button_plus, {
-    clicks <- sv$region_coords()
-    cur_len <- length(clicks)
-    
-    # check if current region is empty / no clicks in region
-    if ( is.null(clicks[[cur_len]]$x) ) {
-      # do nothing
-      return()
-    }
-    
-    # update last region in list
-    clicks[[cur_len + 1]] <- list(x = c(), y = c(), 
-                                  selected = T, 
-                                  subset_name = input$subset,
-                                  subset = sv$subset_logical())
-    region_name <- paste0("region", cur_len + 1)
-    names(clicks)[cur_len + 1] <- region_name
-    sv$region_coords(clicks)
-  })
-  
-  # compute region mask for each coord pair
-  compute_rois <- function() {
-    regions <- sv$region_coords()
-    selected <- sv$region_selected()
-    image <- ionimage()
-    selected_regions <- regions[selected]
-    
-    # check and remove null regions
-    not_null_regions <- which(!sapply(selected_regions, function(region) {
-      any(is.null(region$x))
-    }))
-    selected_regions <- selected_regions[not_null_regions]
-    
-    # compute region of interest
-    rois <- lapply(selected_regions, function(region) {
-      Cardinal:::.selectRegion(
-        region,
-        pixelData(data()),
-        subset = region$subset,
-        axs = image$coordnames
-      )
-    })
-    
-    # try to simplify list to array if needed
-    if ( simplify & length(rois) == 1)
-      rois <- rois[[1]]
-    
-    rois  # return
-  }
-  
-  observeEvent(input$button_select, {
-    rois <- compute_rois()
-    sv$selected_roi(rois)
-  })
-  
-  # creates ROI factor from list
-  # create a string command of the form: makeFactor(region1 = regions[["region1"]], ...)
-  # the string is then evaluated to get factors
-  makeFactor_fromList <- function(regions) {
-    str <- ""
-    for (idx in seq_along(regions)) 
-      str <- paste0(str, glue::glue('{names(regions)[idx]} = regions[["{names(regions)[idx]}"]],'))
-    str <- substr(str, 1, nchar(str) - 1)
-    str <- paste0( "makeFactor(", str, ")")
-    eval(parse(text=str))
-  }
-  
-  observeEvent(input$button_select_factor, {
-    rois <- compute_rois()
-    roi_as_factor <- makeFactor_fromList(rois)
-    sv$selected_roi(roi_as_factor)
+    rcods <- sv$current_region_coords()
+    rcods$x <- c(rcods$x, input$selectView_dbclick$x)
+    rcods$y <- c(rcods$y, input$selectView_dbclick$y)
+    sv$current_region_coords(rcods)
   })
   
   # brush selectView
@@ -365,6 +278,7 @@ selectView <- function(input, output, session, dataset, ..., simplify = FALSE) {
     sv$ionimage_xylim(xylim)
   })
   
+  # update plot options
   observe({
     # do not validate input$options_checkbox, can be null
     new_options <- c("names", "shapes") %in% input$options_checkbox
@@ -372,7 +286,7 @@ selectView <- function(input, output, session, dataset, ..., simplify = FALSE) {
     sv$plot_options(new_options)
   })
   
-  #### nav input reactivity ####
+  #### nav input and mz slider reactivity ####
   
   # m/z slider
   output$mz_slider_ui <- renderUI({
@@ -463,13 +377,83 @@ selectView <- function(input, output, session, dataset, ..., simplify = FALSE) {
     sv$subset(input$subset)   
   })
     
-  observe({
-    # change subset of current region when subset changes
-    validate(need(sv$subset_logical(), "invalid subset"))
-    regions <- isolate(sv$region_coords())
-    regions[[length(regions)]]$subset <- sv$subset_logical()
-    regions[[length(regions)]]$subset_name <- isolate(input$subset)
+  #### region of interest interactivity ####
+  
+  # compute region mask for each coord pair
+  compute_rois <- function() {
+    regions <- sv$region_coords()
+    selected <- sv$region_selected()
+    image <- ionimage()
+    selected_regions <- regions[selected]
+    
+    # check and remove null regions
+    not_null_regions <- which(!sapply(selected_regions, function(region) {
+      any(is.null(region$x))
+    }))
+    selected_regions <- selected_regions[not_null_regions]
+    
+    # compute region of interest
+    rois <- lapply(selected_regions, function(region) {
+      Cardinal:::.selectRegion(
+        region,
+        pixelData(data()),
+        subset = get_subset_logical(data(), region$subset),
+        axs = image$coordnames
+      )
+    })
+    
+    # try to simplify list to array if needed
+    if ( simplify & length(rois) == 1)
+      rois <- rois[[1]]
+    
+    rois  # return
+  }
+  
+  observeEvent(input$button_select, {
+    rois <- compute_rois()
+    sv$selected_roi(rois)
+  })
+  
+  observeEvent(input$button_select_factor, {
+    rois <- compute_rois()
+    roi_as_factor <- do.call(makeFactor, rois)
+    sv$selected_roi(roi_as_factor)
+  })
+  
+  # region name ui
+  output$region_name_ui <- renderUI({
+    region_names <- sv$region_names()
+    last_name <- paste0("region", length(region_names) + 1)
+    textInput(ns("region_name"), label = "Region name",
+              value = last_name)
+  })
+  
+  ## add the region to list of regions to return
+  observeEvent(input$button_add, {
+    rcords <- sv$current_region_coords()
+    if ( is.null(rcords$x) ) {
+      # do nothing, null region, no points clicked
+    }
+    
+    regions <- sv$region_coords()
+    pos <- length(regions) + 1
+    regions[[pos]] <- list(
+      x = rcords$x,
+      y = rcords$y,
+      subset = sv$subset(),
+      selected = T,
+      name = input$region_name
+    )
+    names(regions)[pos] <- input$region_name
     sv$region_coords(regions)
+    
+    # reset region
+    sv$current_region_coords(list(x = c(), y = c()))
+   })
+  
+  ## clear current region
+  observeEvent(input$button_discard, {
+    sv$current_region_coords(list(x = c(), y = c()))
   })
   
   # region picker
@@ -496,10 +480,8 @@ selectView <- function(input, output, session, dataset, ..., simplify = FALSE) {
           )
   })
   
+  # update selected regions
   observeEvent(input$region_picker, {
-    
-    if ( is.null(input$region_picker) ) return()
-    
     regions <- sv$region_coords()
     regions <- lapply(seq_along(regions), function(region_idx) {
       region <- regions[[region_idx]]
@@ -513,9 +495,9 @@ selectView <- function(input, output, session, dataset, ..., simplify = FALSE) {
     names(regions) <- sv$region_names()
     sv$region_coords(regions)
     
-  })
+  }, ignoreNULL = F)
   
-  # update regions
+  # update region in picker
   observe({
     if ( length(sv$subset_choices()) > 1 )
       updatePickerInput(session, "region_picker",
@@ -532,33 +514,7 @@ selectView <- function(input, output, session, dataset, ..., simplify = FALSE) {
       )
   })
   
-  # region name
-  output$region_name_ui <- renderUI({
-    region_names <- sv$region_names()
-    last_name <- region_names[length(region_names)]
-    textInput(ns("region_name"), label = "Region name",
-              value = last_name)
-  })
-  
-  ## TODO: add the region to list of regions to return
-  observeEvent(input$button_add, {
-    # new_name <- isolate({input$region_name})
-    # if ( is.null(new_name) ) return()
-    # regions <- sv$region_coords()
-    # region_names <- names(regions)
-    # last_name <- region_names[length(region_names)]
-    # if ( new_name == last_name ) return()
-    # region_names[length(region_names)] <- new_name
-    # names(regions) <- region_names
-    # sv$region_coords(regions)
-  })
-  
-  ## TODO: reset current region
-  observeEvent(input$button_discard, {
-    
-  })
-  
-  #### ionimage input reactivity ####
+  #### ionimage zoom reactivity ####
   
   # zoom full ionimage
   observeEvent(input$selectView_zoom_full, {
