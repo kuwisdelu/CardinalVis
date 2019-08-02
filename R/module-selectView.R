@@ -540,16 +540,22 @@ selectView <- function(input, output, session, dataset, ..., simplify = FALSE) {
               value = last_name)
   })
   
-  observeEvent(input$button_name_update, {
-    new_name <- isolate({input$region_name})
-    if ( is.null(new_name) ) return()
-    regions <- sv$region_coords()
-    region_names <- names(regions)
-    last_name <- region_names[length(region_names)]
-    if ( new_name == last_name ) return()
-    region_names[length(region_names)] <- new_name
-    names(regions) <- region_names
-    sv$region_coords(regions)
+  ## TODO: add the region to list of regions to return
+  observeEvent(input$button_add, {
+    # new_name <- isolate({input$region_name})
+    # if ( is.null(new_name) ) return()
+    # regions <- sv$region_coords()
+    # region_names <- names(regions)
+    # last_name <- region_names[length(region_names)]
+    # if ( new_name == last_name ) return()
+    # region_names[length(region_names)] <- new_name
+    # names(regions) <- region_names
+    # sv$region_coords(regions)
+  })
+  
+  ## TODO: reset current region
+  observeEvent(input$button_discard, {
+    
   })
   
   #### ionimage input reactivity ####
