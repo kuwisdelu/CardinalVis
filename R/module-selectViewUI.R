@@ -67,7 +67,8 @@ selectViewUI <- function(id) {
       box(
         title = "Navigation",
         background = get_box_background(),
-        collapsible = FALSE,
+        collapsible = TRUE,
+        collapsed = FALSE,
         width = 12,
         fluidRow(
           column(6, style = "padding:0px 5px 0px 20px;",
@@ -83,14 +84,16 @@ selectViewUI <- function(id) {
       box(
         title = "Region of Interest",
         background = get_box_background(),
-        collapsible = FALSE,
+        collapsible = TRUE, collapsed = FALSE,
         width = 12,
+        div(p("Double-click to select regions", 
+              align="center", style="font-size:18px")),
         fluidRow(
           column(7, uiOutput(ns("region_name_ui"))),
-          column(2, style = "padding: 25px 0px 0px 0px;", ## fix top padding
+          column(2, style = "padding: 25px 0px 0px 0px;", 
                  actionButton(ns("button_add"), "Add")),
-          column(3, style = "padding: 25px 0px 0px 0px;", ## fix top padding
-                 actionButton(ns("button_discard"), "Discard"))
+          column(3, style = "padding: 25px 0px 0px 0px;", 
+                 actionButton(ns("button_discard"), "Clear"))
         ),
         uiOutput(ns("region_picker_ui")),
         checkboxGroupInput(ns("options_checkbox"), label = "Plot options",
