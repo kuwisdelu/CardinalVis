@@ -1,5 +1,5 @@
 
-selectView <- function(input, output, session, dataset, ..., simplify = FALSE) {
+selectView <- function(input, output, session, dataset, ..., mode) {
   #### session variables ####
   
   ns <- session$ns
@@ -13,36 +13,37 @@ selectView <- function(input, output, session, dataset, ..., simplify = FALSE) {
   })
   
   dot_args <- list(...)
-  if_else_helper <- function(name, value) {
+  
+  #  helper function to check if "name" exists in list,
+  #   if yes, return value from list, else return "value"
+  dot_arg_helper <- function(name, value) {
     if ( is.null(dot_args[[name]]) ) 
       value
     else
       dot_args[[name]]
   }
+  
   sv <- list(
-    mz = syncVal(if_else_helper("mz", mz(data())[1]), function(mz) {
+    mz = syncVal({
+      if ( !is.null(dot_args[["mz"]]) )
+        mz(data())[features(data(), mz = dot_args[["mz"]])]
+      else 
+        mz(data())[1]
+    }, function(mz) {
       validate(need(mz, "invalid m/z value"))
       mz(data())[features(data(), mz = mz)]
     }),
-    mz_tol = syncVal(if_else_helper("plusminus", 0.001)),
+    mz_tol = syncVal(dot_arg_helper("plusminus", 0.001)),
     xy = syncVal(unname(unlist(coord(data())[1, c(1, 2)]))),
     xy_names = syncVal(names(coord(data()))[c(1, 2)]),
     coord_names = syncVal(coordnames(data())),
-    ionimage_xylim = syncVal(c(range(coord(data())[, 1]),
-    range(coord(data())[, 2]))),
-    spectrum_massrange = syncVal(range(mz(data()))),
+    ionimage_xylim = syncVal(c(range(coord(data())[, 1]), range(coord(data())[, 2]))),
     ionimage_intensity_range = syncVal(NULL),
-    spectrum_intensity_range = syncVal(NULL),
-    ionimage_contrast = syncVal("none"),
-    ionimage_smoothing = syncVal("none"),
-    ionimage_colorscale = syncVal("viridis"),
-    ionimage_function = syncVal("mean"),
-    spectrum_plotvar = syncVal(names(imageData(data()))[1]),
+    ionimage_contrast = syncVal(dot_arg_helper("contrast.enhance", "none")),
+    ionimage_smoothing = syncVal(dot_arg_helper("smooth.image", "none")),
+    ionimage_colorscale = syncVal(dot_arg_helper("colorscale", "viridis")),
+    ionimage_function = syncVal(dot_arg_helper("fun", "mean")),
     ionimage_plotvar = syncVal(names(imageData(data()))[1]),
-    mz_2 = syncVal(NA),
-    mz_3 = syncVal(NA),
-    xy_2 = syncVal(c(NA, NA)),
-    xy_3 = syncVal(c(NA, NA)),
     closed = reactiveVal(FALSE)
   )
   
@@ -68,7 +69,17 @@ selectView <- function(input, output, session, dataset, ..., simplify = FALSE) {
   })
   
   # subset options
-  sv[["subset"]] <- syncVal(sv$subset_choices()[1])
+  sv[["subset"]] <- syncVal({
+    if (!is.null(dot_args[["subset"]])){
+      subset_dots <- dot_args[["subset"]]
+      subset_idx <- which(sapply(sv$subset_choices(), function(subset) {
+        all(get_subset_logical(data(), subset) == subset_dots)
+      }))
+      sv$subset_choices()[subset_idx]
+    } else {
+      sv$subset_choices()[1]
+    }
+  })
   
   # subset logical
   sv[["subset_logical"]] <- reactive({
@@ -95,10 +106,6 @@ selectView <- function(input, output, session, dataset, ..., simplify = FALSE) {
   # feature
   sv[["feature"]] <- reactive({
     mz <- sv$mz()
-    if (!is.na(sv$mz_2()))
-      mz <- c(mz, sv$mz_2())
-    if (!is.na(sv$mz_3()))
-      mz <- c(mz, sv$mz_3())
     features(data(), mz = mz)
   })
   
@@ -114,6 +121,17 @@ selectView <- function(input, output, session, dataset, ..., simplify = FALSE) {
     c(names(imageData(data()))[1], names(featureData(data())))
   })
   
+  sv[["formula"]] <- reactive({
+    if ( !is.null(dot_args[["formula"]]) ) {
+      as.formula(dot_args[["formula"]])
+    }
+    else {
+      lhs <- sv$ionimage_plotvar()
+      val <- pixelData(data())[[lhs]]
+      as.formula(paste0(lhs, "~", paste0(sv$xy_names(), collapse = "*")))
+    }
+  })
+   
   ionimage <- reactive({
     validate(
       need(sv$mz(), "invalid m/z value"),
@@ -121,34 +139,14 @@ selectView <- function(input, output, session, dataset, ..., simplify = FALSE) {
       need(sv$xy_names(), "invalid x/y names"),
       need(sv$ionimage_plotvar(), "invalid image plot values")
     )
-    lhs <- sv$ionimage_plotvar()
-    val <- pixelData(data())[[lhs]]
-    if (!is.null(val) && !is.numeric(val)) {
-      superpose <- FALSE
-      key <- TRUE
-    } else if (length(sv$feature()) > 1L) {
-      superpose <- TRUE
-      key <- TRUE
-    } else {
-      superpose <- FALSE
-      key <- FALSE
-    }
-    if (length(sv$subset()) >= 7L) {
-      layout <- c(2, ceiling(length(sv$subset()) / 2))
-    } else {
-      layout <- TRUE
-    }
-    fm <- paste0(lhs, "~", paste0(sv$xy_names(), collapse = "*"))
     image(
       data(),
-      formula = as.formula(fm),
+      formula = sv$formula(),
       feature = sv$feature(),
       plusminus = sv$mz_tol(),
       contrast.enhance = sv$ionimage_contrast(),
       smooth.image = sv$ionimage_smoothing(),
       fun = match.fun(sv$ionimage_function()),
-      key = key,
-      superpose = superpose,
       colorscale = col.map(sv$ionimage_colorscale(), 100),
       subset = sv$subset_logical()
     )
@@ -172,7 +170,7 @@ selectView <- function(input, output, session, dataset, ..., simplify = FALSE) {
   })
   
   sv[["region_subset_names"]] <- reactive({
-    sapply(sv$region_coords(), function(region) { region$subset_name })
+    sapply(sv$region_coords(), function(region) { region$subset })
   })
   
   # plot options
@@ -223,10 +221,12 @@ selectView <- function(input, output, session, dataset, ..., simplify = FALSE) {
     sel <- sv$current_region_coords()
     points(sel$x, sel$y, pch = 4, lwd = 4, 
            cex = 1.5, col = selected_hex)
-    lines(sel$x, sel$y, lwd = 4, col = selected_hex)
-    lines(x = c(sel$x[length(sel$x)], sel$x[1]),
-          y = c(sel$y[length(sel$y)], sel$y[1]),
-          lty = 3, lwd = 4, col = selected_hex)
+    if ( mode != "pixels" ) {
+      lines(sel$x, sel$y, lwd = 4, col = selected_hex)
+      lines(x = c(sel$x[length(sel$x)], sel$x[1]),
+            y = c(sel$y[length(sel$y)], sel$y[1]),
+            lty = 3, lwd = 4, col = selected_hex)
+    }
     
     lapply(sv$region_coords(), function(region) {
       if (region$selected)
@@ -236,10 +236,15 @@ selectView <- function(input, output, session, dataset, ..., simplify = FALSE) {
         color = unselected_hex
       }
       
-      polygon(region$x, region$y, border = color, lwd = 2)
-      if ( sv$plot_option()['names'] ) 
-        text(mean(region$x), mean(region$y), region$name,
-             cex = 1.5, col = color)
+      if ( mode == "region" ) {
+        polygon(region$x, region$y, border = color, lwd = 2)
+        if ( sv$plot_option()['names'] ) 
+          text(mean(region$x), mean(region$y), region$name,
+               cex = 1.5, col = color)
+      } else {
+        points(region$x, region$y, pch = 4, lwd = 4, 
+               cex = 0.8, col = color)
+      }
     })
   }
   
@@ -257,10 +262,6 @@ selectView <- function(input, output, session, dataset, ..., simplify = FALSE) {
        }, warning = plot_null, error = plot_null)
   }, bg="transparent")
     
-  observeEvent(input$button_debug, {
-    browser()
-  })
-  
   # store click location on double click
   observeEvent(input$selectView_dbclick, {
     rcods <- sv$current_region_coords()
@@ -292,9 +293,9 @@ selectView <- function(input, output, session, dataset, ..., simplify = FALSE) {
   output$mz_slider_ui <- renderUI({
     sliderTextInput(
       inputId = ns("mz_slider"),
-      label = "m/z value",
-      grid = T, width = "100%", force_edges = T,
-      choices = mz(data())
+      label = "m/z value", choices = mz(data()),
+      selected = sv$mz(),
+      grid = T, width = "100%", force_edges = T
     )
   })
   
@@ -394,17 +395,21 @@ selectView <- function(input, output, session, dataset, ..., simplify = FALSE) {
     
     # compute region of interest
     rois <- lapply(selected_regions, function(region) {
-      Cardinal:::.selectRegion(
-        region,
-        pixelData(data()),
-        subset = get_subset_logical(data(), region$subset),
-        axs = image$coordnames
-      )
+      if ( mode == "regions" ) 
+        Cardinal:::.selectRegion(
+          region,
+          pixelData(data()),
+          subset = get_subset_logical(data(), region$subset),
+          axs = image$coordnames
+        )
+      else 
+         Cardinal:::.selectPixels(
+          region,
+          pixelData(data()),
+          subset = get_subset_logical(data(), region$subset),
+          axs = image$coordnames
+        )
     })
-    
-    # try to simplify list to array if needed
-    if ( simplify & length(rois) == 1)
-      rois <- rois[[1]]
     
     rois  # return
   }
@@ -558,6 +563,10 @@ selectView <- function(input, output, session, dataset, ..., simplify = FALSE) {
     xlim <- zoom_out(xylim[c(1,2)], xr)
     ylim <- zoom_out(xylim[c(3,4)], yr)
     sv$ionimage_xylim(c(xlim, ylim))
+  })
+  
+  observeEvent(input$but_debug, {
+    browser()
   })
   
   return(sv$selected_roi)

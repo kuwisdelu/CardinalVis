@@ -3,14 +3,19 @@ Type: Package
 Title: Shiny interface for Cardinal
 Version: 0.0.1
 Date: 2019-4-24
-Author: Kylie A. Bemis <k.bemis@northeastern.edu>
+Author@R: c(
+  person("Kylie", "Bemis", "A.", 
+          email = "k.bemis@northeastern.edu", role = c("aut", "cre")),
+  person("Nischal", "Mahaveer Chand", 
+          email = "mahaveerchand.n@husky.neu.edu", role = c("aut")
+        )
 Maintainer: Kylie A. Bemis <k.bemis@northeastern.edu>
 Description: Provides a shiny-based GUI interface for Cardinal
 	with a focus on interactive visualization of mass spectrometry
 	imaging experiments.
 License: Artistic-2.0
 Depends: R (>= 3.6), Cardinal, graphics
-Imports: shiny, shinydashboard, stats
+Imports: shiny, shinydashboard, stats, shinyWidgets
 Suggests: BiocStyle, knitr, rmarkdown
 VignetteBuilder: knitr
 biocViews: Software, ImagingMassSpectrometry, Visualization, GUI

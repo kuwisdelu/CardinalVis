@@ -91,7 +91,13 @@ selectUI <- function() {
   jscode <- "shinyjs.closeWindow = function() { window.close(); }"
   dashboardPage(skin="red",
                 dashboardHeader(
-                  title="Region of Interest Selector"
+                  title="Region of Interest Selector",
+                  dropdownMenu(badgeStatus = NULL, icon = icon("question-circle"),
+                               headerText = "Help Menu", 
+                  tags$li(actionLink("openGenHelp", label = "How to use this dashboard?"), class = "dropdown"),
+                  tags$li(actionLink("openMultiHelp", label = "Picking multiple regions"), class = "dropdown"),
+                  tags$li(actionLink("openReturnHelp", label = "Selecting what to return"), class = "dropdown")
+                  )
                 ),
                 dashboardSidebar(disable=TRUE),
                 dashboardBody(

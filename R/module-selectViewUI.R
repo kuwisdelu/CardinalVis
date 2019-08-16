@@ -59,7 +59,8 @@ selectViewUI <- function(id) {
             background: transparent;  
             border: 1px solid transparent;}")),
       fluidRow(style = "padding: 20px 20px 0px 20px;",
-               uiOutput(ns("mz_slider_ui")))
+               uiOutput(ns("mz_slider_ui"))),
+      actionButton(ns("but_debug"), "Debug")
     ),
     
     column(
@@ -106,7 +107,5 @@ selectViewUI <- function(id) {
                         "Return as factor", width = "100%")
         ))
       ))
-  ),
-  
-  fluidRow(actionButton(ns("button_debug"), "DEBUG")))
+  ))
 }

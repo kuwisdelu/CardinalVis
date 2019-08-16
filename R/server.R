@@ -100,21 +100,91 @@ msiServer <- function(dataset) {
 
 selectServer <- function(dataset, ...) {
   
+  id <- "selectVis"
+  
   function(input, output, session) {
     
+    ## help meun ##
+    
+    # general help
+    observeEvent(input$openGenHelp, {
+      showModal(
+        modalDialog(
+          title = "Region of Interest picker",
+          "Use this dashboard to pick a region that might be of interest in an", 
+          tags$code("MSImagingExperiment"), "object.", br(), "Use the", 
+          tags$strong("Navigation"), "panel to update m/z value or",
+          "subset of interest for the current region selection. The m/z value can", 
+          "also be updated using the slider at the bottom.", br(), "The", 
+          tags$strong("Region of Interest"), "panel can be used to add, clear, rename,",
+          "select, and return the selected regions. There is no limit on the number of",
+          "selectable regions.", br(), br(),
+          "Double-click on the ion-image to start creating a polygon.",
+          "You will be able to preview the polygon as you click. There is no",
+          "limit to the number of sides of the polygon. The dashed line completes",
+          "the polygon when confirmed. The image below gives a preview.",
+          br(), br(), 
+          tags$img(src=base64enc::dataURI(file = "www/help_image_one.jpg", mime = "image/jpeg"),
+                   style="display: block; margin-left: auto; margin-right: auto; width: 40%;"),
+          br(), br(),
+          "Each region can be named, by default each region is named as",
+          tags$code("regionX"), ", where X is the index of the region in the list.",
+          "Once satisfied, use the", tags$code("Add"), "button to confim a region, or", tags$code("Clear"),
+          "button to reset the current selection.", br(), br(),
+          "You can choose to return a named list of boolean vectors, where the names",
+          "are the region name, or a factor containing the region names."
+        )
+      )
+    }, ignoreInit = T)
+   
+    # multi select help 
+    observeEvent(input$openMultiHelp, {
+      showModal(
+        modalDialog(
+          title = "Selecting multiple regions",
+          "Once a region is added using", tags$code("Add"), ", you have the option",
+          "to add multiple regions. All previous confirmed regions are indicated",
+          "on the ion-image with their respective region names. The image below",
+          "gives a preview of two confirmed regions", br(), br(),
+          tags$img(src=base64enc::dataURI(file = "www/help_image_two.jpg", mime = "image/jpeg"),
+                   style="display: block; margin-left: auto; margin-right: auto; width: 40%;")
+        )
+      )
+    }, ignoreInit = T)
+    
+    # return help
+    observeEvent(input$openReturnHelp, {
+      showModal(
+        modalDialog(
+          title = "Picking what to return",
+          "The dropdown menu in", tags$code("Region of Interest"), 
+          "can be used to select and deselect which regions are returned. When an",
+          tags$code("MSImagingExperiment"), "has multiple runs, subtext specifying",
+          "the subset of that region is also shown.", br(), br(),
+          tags$img(src=base64enc::dataURI(file = "www/help_image_three.jpg", mime = "image/jpeg"),
+                   style="display: block; margin-left: auto; margin-right: auto; width: 50%;"),
+          br(), 
+          "Some convenience plot options are provided to declutter the ion-image when working",
+          "with a large number of regions."
+        )
+      )
+    }, ignoreInit = T)
+    
+    # render main UI
     output$plot_display <- renderUI({
-      selectViewUI("test_select")
+      selectViewUI(id)
     })
     
-    # ret holds return values
+    # ret holds return values, ret$roi is null
     ret <- reactiveValues(roi = NULL)
     
     # run once on start
     observeEvent(input, {
       if ( !is.null(dataset) )
-        ret$roi <- callModule(selectView, "test_select", dataset, ...)
+        ret$roi <- callModule(selectView, id, dataset, ...)
     }, ignoreNULL = FALSE)
     
+    # return values when ret$roi is not null
     observe({
       if ( !is.null(ret$roi()) ) {
         stopApp(ret$roi())
