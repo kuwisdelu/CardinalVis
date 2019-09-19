@@ -104,7 +104,8 @@ selectServer <- function(dataset, ...) {
   
   function(input, output, session) {
     
-    ## help meun ##
+    ## help menu ##
+    imagePath <- paste0(system.file(package = "CardinalVis"), "/www/")
     
     # general help
     observeEvent(input$openGenHelp, {
@@ -124,7 +125,8 @@ selectServer <- function(dataset, ...) {
           "limit to the number of sides of the polygon. The dashed line completes",
           "the polygon when confirmed. The image below gives a preview.",
           br(), br(), 
-          tags$img(src=base64enc::dataURI(file = "www/help_image_one.jpg", mime = "image/jpeg"),
+          tags$img(src=base64enc::dataURI(file = paste0(imagePath, "help_image_one.jpg"), 
+                                          mime = "image/jpeg"),
                    style="display: block; margin-left: auto; margin-right: auto; width: 40%;"),
           br(), br(),
           "Each region can be named, by default each region is named as",
@@ -146,7 +148,8 @@ selectServer <- function(dataset, ...) {
           "to add multiple regions. All previous confirmed regions are indicated",
           "on the ion-image with their respective region names. The image below",
           "gives a preview of two confirmed regions", br(), br(),
-          tags$img(src=base64enc::dataURI(file = "www/help_image_two.jpg", mime = "image/jpeg"),
+          tags$img(src=base64enc::dataURI(file = paste0(imagePath, "help_image_two.jpg"), 
+                                          mime = "image/jpeg"),
                    style="display: block; margin-left: auto; margin-right: auto; width: 40%;")
         )
       )
@@ -161,7 +164,8 @@ selectServer <- function(dataset, ...) {
           "can be used to select and deselect which regions are returned. When an",
           tags$code("MSImagingExperiment"), "has multiple runs, subtext specifying",
           "the subset of that region is also shown.", br(), br(),
-          tags$img(src=base64enc::dataURI(file = "www/help_image_three.jpg", mime = "image/jpeg"),
+          tags$img(src=base64enc::dataURI(file = paste0(imagePath, "help_image_three.jpg"), 
+                                          mime = "image/jpeg"),
                    style="display: block; margin-left: auto; margin-right: auto; width: 50%;"),
           br(), 
           "Some convenience plot options are provided to declutter the ion-image when working",
