@@ -4,7 +4,9 @@ importFrom("graphics",
 	"par",
 	"points",
 	"rect",
-	"text")
+	"text",
+	"lines",
+	"polygon")
 
 importFrom("grDevices",
 	"rgb")
@@ -19,4 +21,11 @@ import("shinydashboard")
 
 import("Cardinal")
 
+import("shinyWidgets")
+
+importFrom("base64enc",
+  "dataURI")
+
 export("msiVis")
+
+export("selectVis")
