@@ -2,12 +2,8 @@
 selectVis <- function(dataset, ..., mode = c("region", "pixels")) {
 	
 	## validate mode
-	if ( length(mode) > 1 )
-	  mode <- mode[1]
-	if ( !(mode %in% c("region", "pixels")) ) {
-	  print("Unknown mode, please use region or pixels")
-	  return()
-	}
+  mode <- match.arg(mode)
+  dots <- match.call(expand.dots = FALSE)$...
 	
 	## get and validate dataset
 	if ( is.symbol(substitute(dataset)) )
@@ -15,10 +11,11 @@ selectVis <- function(dataset, ..., mode = c("region", "pixels")) {
 	data <- try(get(dataset, envir=globalenv()), silent=TRUE)
 
 	if ( inherits(data, get_supported_classes()) ) {
-  	selectedROI <- runApp(list(ui=selectUI(), server=selectServer(dataset, ..., mode = mode)))
+  	selectedROI <- runApp(list(ui=selectUI(), 
+  	                           server=selectServer(dataset, dots, mode = mode)))
   	return(invisible(selectedROI))
 	} else {
-	  print("unsupported data type")
+	  message("unsupported data type")
 	}
   
 }

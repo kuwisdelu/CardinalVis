@@ -395,7 +395,7 @@ selectView <- function(input, output, session, dataset, ..., mode) {
     
     # compute region of interest
     rois <- lapply(selected_regions, function(region) {
-      if ( mode == "regions" ) 
+      if ( mode == "region" ) 
         Cardinal:::.selectRegion(
           region,
           pixelData(data()),
